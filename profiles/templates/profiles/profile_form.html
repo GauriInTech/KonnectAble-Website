@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="card profile-card">
+  <div class="card-body">
+    <h3 class="mb-3">Edit Profile</h3>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-8">
+          <div class="mb-3">{{ form.headline.label_tag }}{{ form.headline }}</div>
+          <div class="mb-3">{{ form.location.label_tag }}{{ form.location }}</div>
+          <div class="mb-3">{{ form.skills.label_tag }}{{ form.skills }}</div>
+          <div class="mb-3">{{ form.portfolio_url.label_tag }}{{ form.portfolio_url }}</div>
+          <div class="mb-3">{{ form.bio.label_tag }}{{ form.bio }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">{{ form.profile_image.label_tag }}{{ form.profile_image }}</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-link" href="{% url 'profile_detail' request.user.username %}">Cancel</a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

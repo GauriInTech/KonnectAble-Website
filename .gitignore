@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Virtual environment
+.env/
+venv/
+
+# SQLite
+db.sqlite3
+
+# Django
+*.log
+media/
+/staticfiles/
+
+# IDEs
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# env files
+.env
+
+# node
+node_modules/

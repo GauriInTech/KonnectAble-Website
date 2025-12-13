@@ -1,0 +1,11 @@
+<h1>All Profiles</h1>
+
+<ul>
+  {% for profile in profiles %}
+    <li>
+      <a href="{% url 'profile_detail' profile.user.username %}">
+        {{ profile.user.username }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>

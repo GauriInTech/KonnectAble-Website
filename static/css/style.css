@@ -1,0 +1,30 @@
+:root{
+  --primary: #0d6efd;
+  --muted:#6c757d;
+}
+body{background:#f7f9fb}
+.profile-card{max-width:900px;margin:0 auto}
+.avatar{width:120px;height:120px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#495057}
+.bio{white-space:pre-wrap}
+.profile-actions a{margin-right:8px}
+.dashboard-grid{display:grid;grid-template-columns:1fr 320px;gap:20px}
+.card .card-title{margin-bottom:0.5rem}
+.post-placeholder{height:120px;background:linear-gradient(90deg,#fff,#f8fafc);border-radius:6px;border:1px dashed #e9ecef;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+
+/* Composer & Feed styles */
+#post-composer textarea{resize:vertical;border-radius:8px}
+.composer-actions i{color:var(--muted)}
+#feed .card{border-radius:8px}
+.avatar{width:64px;height:64px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#495057}
+.profile-card .avatar{width:120px;height:120px}
+
+/* Smaller avatar in feed */
+#feed .avatar{width:44px;height:44px;font-size:16px}
+
+/* Responsive tweaks */
+@media (max-width: 768px){
+  .dashboard-grid{grid-template-columns:1fr}
+  .profile-card{padding:0 12px}
+  .avatar{width:56px;height:56px}
+}
+
