@@ -6,7 +6,10 @@ from django.http import HttpResponse  # type: ignore
 
 
 
-def home(request):
+def dashboard(request):
+    return render(request, "dashboard.html")
+
+def user_dashboard(request):
     return render(request, "home.html", {"username": request.user.username})
 
 def signup_view(request):
