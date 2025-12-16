@@ -10,7 +10,7 @@ class Profile(models.Model):
     )
     bio = models.TextField(blank=True)
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
-    headline = models.CharField(blank=True, max_length=255)
+    headline = models.CharField(blank=True, null=True, max_length=255)
     location = models.CharField(blank=True, max_length=255)
     portfolio_url = models.URLField(blank=True)
     skills = models.CharField(blank=True, help_text='Comma-separated skills', max_length=512)
