@@ -9,6 +9,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('', RedirectView.as_view(pattern_name='dashboard', permanent=False)),
     path('profiles/', include('profiles.urls')),
+    path('posts/', include('posts.urls')),   
 ]
 
 if settings.DEBUG:

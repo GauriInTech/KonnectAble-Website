@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KonnectAble Feed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background:#f3f2ef;
+            margin:0;
+        }
+
+        .nav {
+            background:white;
+            padding:10px 20px;
+            border-bottom:1px solid #ddd;
+        }
+
+        .container {
+            max-width:600px;
+            margin:20px auto;
+        }
+
+        .create-post {
+            background:white;
+            padding:12px 16px;
+            border-radius:8px;
+            box-shadow:0 0 4px rgba(0,0,0,0.08);
+            margin-bottom:12px;
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+
+        .create-post-header {
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-size:14px;
+            color:#555;
+        }
+
+        .avatar-circle {
+            width:40px;
+            height:40px;
+            border-radius:50%;
+            background:#c4d7f5;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            color:#0a66c2;
+        }
+
+        .post-card {
+            background:white;
+            padding:20px;
+            border-radius:8px;
+            box-shadow:0 0 3px rgba(0,0,0,0.1);
+            margin-bottom:15px;
+        }
+
+        textarea {
+            width:100%;
+            border:1px solid #ddd;
+            border-radius:4px;
+            font-size:16px;
+            resize:none;
+            padding:8px;
+        }
+
+        input[type="file"] {
+            width:100%;
+            padding:8px;
+            border:1px solid #ddd;
+            border-radius:4px;
+            margin-top:8px;
+        }
+
+        .post-header {
+            font-weight:bold;
+            margin-bottom:10px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .post-time {
+            font-size:13px;
+            color:#666;
+        }
+
+        .post-actions {
+            display:flex;
+            gap:15px;
+            margin-top:15px;
+        }
+
+        .action-btn {
+            background:none;
+            border:1px solid #ccc;
+            cursor:pointer;
+            padding:6px 12px;
+            border-radius:6px;
+            font-size:14px;
+        }
+
+        .action-btn:hover {
+            background:#f0f0f0;
+        }
+
+        .comment-form {
+            margin-top:10px;
+            padding:10px;
+            background:#f9f9f9;
+            border-radius:8px;
+        }
+
+        button.main-btn {
+            background:#0a66c2;
+            color:white;
+            padding:8px 16px;
+            border:none;
+            border-radius:20px;
+            cursor:pointer;
+            font-weight:bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <h2>🟢 KonnectAble Feed</h2>
+    </div>
+
+    <div class="container">
+        <!-- CREATE POST FORM -->
+        <div class="create-post">
+            <div class="create-post-header">
+                <div class="avatar-circle">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <span>Start a post</span>
+            </div>
+
+            <form method="post" action="" enctype="multipart/form-data">
+                {% csrf_token %}
+                <textarea name="content" rows="3" placeholder="Share your thoughts..."></textarea>
+                <input type="file" name="image" accept="image/*">
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+                    <button type="submit" class="main-btn">Post</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- POSTS FEED -->
+        {% for post in posts %}
+            <div class="post-card">
+                <div class="post-header">
+                    <span>{{ post.user.username }}</span>
+                    <span class="post-time">{{ post.created_at|timesince }} ago</span>
+                </div>
+
+                <div style="margin:15px 0;">
+                    <p>{{ post.content }}</p>
+                    {% if post.image %}
+                        <div style="margin-top:10px;">
+                            <img src="{{ post.image.url }}" alt="Post image" style="max-width:100%; border-radius:8px;">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="post-actions">
+                    <!-- LIKE -->
+                    <form method="post" action="/posts/like/{{ post.id }}/">
+                        {% csrf_token %}
+                        <button
+                            type="button"
+                            class="action-btn like-btn"
+                            data-post-id="{{ post.id }}"
+                        >
+                            👍 Like ({{ post.like_set.count }})
+                        </button>
+                    </form>
+
+                    <!-- COMMENT -->
+                    <a href="#comment-form-{{ post.id }}" class="action-btn"
+                       style="text-decoration:none; display:inline-block; text-align:center;">
+                        💬 Comment
+                    </a>
+
+                    <!-- ✅ DELETE BUTTON -->
+                    {% if post.user == request.user %}
+                        <form method="post" action="/posts/delete/{{ post.id }}/" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="action-btn"
+                                    onclick="return confirm('Delete this post?')"
+                                    style="color:#e74c3c;">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <!-- COMMENT FORM -->
+                <div id="comment-form-{{ post.id }}" class="comment-form">
+                    <form method="post" action="/posts/comment/{{ post.id }}/">
+                        {% csrf_token %}
+                        <textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%;"></textarea>
+                        <button type="submit" class="main-btn" style="margin-top:8px;">Comment</button>
+                    </form>
+                </div>
+
+                <!-- SHOW COMMENTS -->
+                {% for comment in post.comments.all %}
+                    <div style="margin-top:10px; padding:10px; background:#f9f9f9; border-radius:6px;">
+                        <strong>{{ comment.author_name }}</strong>
+                        <span style="font-size:12px; color:#666;">{{ comment.created_at|timesince }} ago</span>
+                        <p style="margin:5px 0 0 0;">{{ comment.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p style="text-align:center; color:#666;">No posts yet. Create the first one!</p>
+        {% endfor %}
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    document.querySelectorAll('.like-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const postId = this.dataset.postId;
+
+            fetch(`/posts/like/${postId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.textContent = `👍 Like (${data.likes_count})`;
+            })
+            .catch(err => console.error(err));
+        });
+    });
+});
+</script>
+
+</body>
+</html>
