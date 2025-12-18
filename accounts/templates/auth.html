@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KonnectAble — Login / Signup</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Pacifico&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --accent:#68b4d4;
+  --accent2:#ff9ccf;
+  --muted:#6b6b6b;
+  --glass: rgba(255,255,255,0.7);
+}
+
+*{box-sizing:border-box}
+html,body{
+  height:100%;
+  margin:0;
+  font-family:Poppins,system-ui,Arial;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+body{
+  /* layered animated background for a premium landing feel */
+  background:
+    radial-gradient(1200px 600px at 10% 20%, rgba(104,180,212,0.12), transparent 12%),
+    radial-gradient(800px 400px at 90% 80%, rgba(255,156,207,0.08), transparent 12%),
+    linear-gradient(180deg,#fffefb,#f3fbff);
+  position:relative;
+}
+
+/* slow drift for the radial gradients */
+@keyframes bgDrift {
+  0%{background-position:10% 20%, 90% 80%, 0 0}
+  50%{background-position:8% 22%, 92% 78%, 0 0}
+  100%{background-position:10% 20%, 90% 80%, 0 0}
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(circle at 20% 20%, rgba(104,180,212,0.06), transparent 10%),
+             radial-gradient(circle at 80% 80%, rgba(255,156,207,0.04), transparent 8%);
+  mix-blend-mode:screen;
+  animation:bgDrift 12s linear infinite;
+  z-index:0;
+}
+
+/* subtle noise texture for depth */
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:linear-gradient(transparent, rgba(255,255,255,0.01));
+  opacity:0.6;
+  z-index:0;
+}
+
+/* ===== LAYOUT ===== */
+.auth{
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:1fr;
+  position:relative;
+  z-index:1;
+}
+
+
+
+/* floating decorative blobs */
+.auth .decor-blob{
+  position:absolute;
+  width:420px;
+  height:420px;
+  filter:blur(30px);
+  opacity:0.35;
+  z-index:0;
+  pointer-events:none;
+}
+.auth .decor-blob.blob-left{left:-80px;top:40px;background:linear-gradient(135deg, rgba(104,180,212,0.25), rgba(91,184,255,0.12));transform:rotate(15deg)}
+.auth .decor-blob.blob-right{right:-100px;bottom:40px;background:linear-gradient(135deg, rgba(255,156,207,0.16), rgba(255,200,230,0.08));transform:rotate(-10deg)}
+
+@keyframes floatSlow{0%{transform:translateY(0)}50%{transform:translateY(-18px)}100%{transform:translateY(0)}}
+.auth .decor-blob{animation:floatSlow 7s ease-in-out infinite}
+
+/* ===== PANELS ===== */
+.panel{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  padding:20px;
+}
+
+
+/* ===== ROBOT ===== */
+@keyframes float{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-12px)}
+  100%{transform:translateY(0)}
+}
+
+@keyframes blink{
+  0%, 90%, 100%{transform:scaleY(1)}
+  95%{transform:scaleY(0.1)}
+}
+
+.blob{width:350px;height:350px}
+.pupil{fill:#1b1b1b}
+.eye{animation:blink 4s infinite}
+.robot-card:hover .mouth{stroke:#ff6b6b}
+.robot-card:hover{animation:float 2s ease-in-out infinite}
+.robot-card.happy .mouth{stroke:#ff6b6b;d: path('M212 170 Q250 160 288 170')}
+
+
+/* ===== FORMS ===== */
+.form-wrap{
+  position:relative;
+  width:100%;
+  height:100%;
+}
+
+.form-box{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transform:translateX(40px);
+  transition:.6s ease;
+  pointer-events:none;
+ 
+}
+
+.form-box.active{
+  opacity:1;
+  transform:translateX(0);
+  pointer-events:auto;
+}
+
+body.login-mode .signup{
+  opacity:0;
+  transform:translateX(-40px);
+}
+
+.card{
+  width:100%;
+  max-width:800px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.75));
+  padding:500px;
+  border-radius:16px;
+  box-shadow:0 18px 40px rgba(8,18,30,0.08);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.6);
+  transition:transform .25s ease, box-shadow .25s ease;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.card:hover{transform:translateY(-8px);box-shadow:0 28px 60px rgba(8,18,30,0.12)}
+
+.form-box.signup .card,
+.form-box.login .card{
+  padding:20px;
+
+  margin-bottom:20px;
+  min-height:500px;
+  border:1px solid rgba(121, 184, 224, 0.45);
+  background:linear-gradient(180deg,#ffffff,#fbfffd);
+  box-shadow:0 12px 30px rgba(16,24,40,0.06);
+  overflow:auto;
+}
+
+.form-box.signup .form-row{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  align-items:stretch;
+  overflow:visible;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+h1{margin:0 0 8px;font-size:26px}
+.lead{color:var(--muted);margin-bottom:18px}
+
+.hero-heading{
+  text-align:center;
+  margin:20px 0 28px;
+  font-size:34px;
+  color:var(--accent);
+  z-index:2;
+  font-family:'Playfair Display', Georgia, serif;
+  font-style:italic;
+  letter-spacing:0.2px;
+}
+.hero-heading .brand{
+  display:inline-block;
+  font-family:Pacifico, cursive;
+  font-size:44px;
+  color:var(--accent2);
+  margin-right:8px;
+  vertical-align:middle;
+  transform-origin:center;
+}
+.hero-heading .emph{font-style:normal;font-weight:700;color:#2b7ea8}
+
+.form-row{display:flex;flex-direction:column;gap:12px}
+label{font-weight:600;font-size:14px}
+
+.input{
+  display:flex;
+  padding:12px;
+  border-radius:12px;
+  border:2px solid #eee;
+  background:#fbfbfb;
+}
+
+.input:focus-within{
+  border-color:rgba(121, 181, 224, 0.5);
+  outline:3px solid rgba(121,224,200,.12);
+}
+
+input{
+  border:none;
+  background:transparent;
+  width:100%;
+  font-size:16px;
+}
+
+button{
+  margin-top:10px;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  font-weight:700;
+  cursor:pointer;
+  color:#fff;
+  background:linear-gradient(135deg,var(--accent),#5bb8ff);
+}
+
+.alt{
+  text-align:center;
+  margin-top:12px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+.alt a{
+  cursor:pointer;
+  font-weight:600;
+  color:#5bb8ff;
+}
+
+/* small responsive tweaks */
+@media(max-width:900px){
+  .auth{grid-template-columns:1fr}
+  body.login-mode .auth{grid-template-columns:1fr}
+  .panel.robot{display:none}
+  .hero-heading{font-size:26px}
+  .hero-heading .brand{font-size:32px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- server-side UserDashboard will render at its own URL -->
+
+<h1 class="hero-heading"><span class="brand">KonnectAble</span> helps you to <span class="emph">connect</span> your loved ones</h1>
+
+<div class="auth">
+
+
+
+  <!-- FORMS -->
+  <section class="panel">
+    <div class="form-wrap">
+
+      <!-- SIGNUP (DEFAULT ACTIVE) -->
+      <div class="form-box signup active">
+        <div class="card">
+          <div class="robot-card">
+            <svg class="blob" viewBox="0 0 500 400" id="robotSVG">
+              <defs><filter id="soft"><feGaussianBlur stdDeviation="10"/></filter></defs>
+              <circle cx="250" cy="150" r="120" fill="#e0f7ff" filter="url(#soft)"/>
+              <ellipse class="eye" cx="210" cy="125" rx="12" ry="9" fill="#fff"/>
+              <ellipse class="eye" cx="290" cy="125" rx="12" ry="9" fill="#fff"/>
+              <circle class="pupil" cx="210" cy="125" r="7" fill="#1b1b1b"/>
+              <circle class="pupil" cx="290" cy="125" r="7" fill="#1b1b1b"/>
+              <path d="M212 160 Q250 180 288 160" stroke="#ff8b8b" stroke-width="4" fill="none"/>
+            </svg>
+            <div class="alt">Already a member? <a onclick="goLogin()">Log in</a></div>
+          </div>
+          <div class="form-content" style="flex:1;">
+            <h1>Create account</h1>
+          
+            <form method="post" action="{% url 'signup' %}" onsubmit="return false;">
+              {% csrf_token %}
+              <div class="form-row">
+                <label>Username</label>
+                <div class="input"><input name="username" placeholder="Enter username"></div>
+                <label>Email</label>
+                <div class="input"><input name="email" type="email" placeholder="Enter email"></div>
+                <label>Password</label>
+                <div class="input"><input name="password" type="password" placeholder="Enter password"></div>
+                <label>Confirm</label>
+                <div class="input"><input name="confirm_password" type="password" placeholder="Confirm password"></div>
+                <button type="button" onclick="goLogin()">Signup</button>
+              </div>
+            </form>
+            
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="form-box login">
+        <div class="card">
+          <div class="robot-card">
+            <svg class="blob" viewBox="0 0 500 400" id="robotSVG">
+              <defs><filter id="soft"><feGaussianBlur stdDeviation="10"/></filter></defs>
+              <circle cx="250" cy="150" r="120" fill="#e0f7ff" filter="url(#soft)"/>
+              <ellipse class="eye" cx="210" cy="125" rx="12" ry="9" fill="#fff"/>
+              <ellipse class="eye" cx="290" cy="125" rx="12" ry="9" fill="#fff"/>
+              <circle class="pupil" cx="210" cy="125" r="7" fill="#1b1b1b"/>
+              <circle class="pupil" cx="290" cy="125" r="7" fill="#1b1b1b"/>
+              <path d="M212 160 Q250 180 288 160" stroke="#ff8b8b" stroke-width="4" fill="none"/>
+            </svg>
+            <div class="alt">New here? <a onclick="goSignup()">Create account</a></div>
+          </div>
+          <div class="form-content" style="flex:1;">
+            <h1>Welcome back</h1>
+            <p class="lead">Let's get you connected</p>
+            <form id="loginForm" method="post" action="{% url 'login' %}">
+              {% csrf_token %}
+              <div class="form-row">
+                <label>Username</label>
+                <div class="input"><input name="username" placeholder="Enter username"></div>
+                <label>Password</label>
+                <div class="input"><input type="password" name="password" placeholder="Enter password"></div>
+                <button type="submit">Login</button>
+              </div>
+            </form>
+            
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+function goLogin(){
+  document.body.classList.add("login-mode");
+  document.querySelector(".signup").classList.remove("active");
+  document.querySelector(".login").classList.add("active");
+  history.replaceState(null, "", "?mode=login");
+}
+
+function goSignup(){
+  document.body.classList.remove("login-mode");
+  document.querySelector(".login").classList.remove("active");
+  document.querySelector(".signup").classList.add("active");
+  history.replaceState(null, "", "?mode=signup");
+}
+
+const params = new URLSearchParams(window.location.search);
+if(params.get("mode") === "login"){
+  goLogin();
+}
+
+
+</script>
+
+<script>
+// 🔥 PERFECT ROBOT EYE TRACKING - Works across entire window!
+let mouseX = 0;
+let mouseY = 0;
+
+const pupils = document.querySelectorAll('.pupil');
+
+window.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+
+  pupils.forEach((pupil) => {
+    const rect = pupil.getBoundingClientRect();
+    const eyeCenterX = rect.left + rect.width / 2;
+    const eyeCenterY = rect.top + rect.height / 2;
+
+    let dx = mouseX - eyeCenterX;
+    let dy = mouseY - eyeCenterY;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const maxMove = 4;
+
+    if (distance > 0) {
+      const moveX = (dx / distance) * Math.min(maxMove, distance / 10);
+      const moveY = (dy / distance) * Math.min(maxMove, distance / 10);
+      pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    }
+  });
+});
+
+// Reset pupils on load
+window.addEventListener('load', () => {
+  pupils.forEach(pupil => {
+    pupil.style.transform = 'translate(0px, 0px)';
+  });
+});
+
+// Make robot interactive: click to make happy
+document.querySelectorAll('.robot-card').forEach(card => {
+  card.addEventListener('click', () => {
+    card.classList.add('happy');
+    setTimeout(() => card.classList.remove('happy'), 2000);
+  });
+});
+
+// React to form input
+document.querySelectorAll('input').forEach(input => {
+  input.addEventListener('input', () => {
+    const robot = input.closest('.card').querySelector('.robot-card');
+    robot.classList.add('happy');
+    setTimeout(() => robot.classList.remove('happy'), 1000);
+  });
+});
+</script>
+
+<script>
+// Intercept login form submit and show the dashboard on successful auth
+(function(){
+  const form = document.getElementById('loginForm');
+  if(!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = form.action;
+    const data = new FormData(form);
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin',
+        redirect: 'follow'
+      });
+
+      // If the server redirected (successful login usually redirects), follow it
+      if (resp.redirected) {
+        window.location = resp.url;
+        return;
+      }
+
+      // Otherwise inspect response body for an error message; if none, assume success for demo
+      const text = await resp.text();
+      if (/invalid username|invalid password|Invalid username|Invalid password/i.test(text)){
+        alert('Invalid username or password');
+      } else {
+        // No explicit redirect; assume success and go to server-side dashboard
+        window.location = "{% url 'accounts_home' %}";
+      }
+    } catch (err) {
+      // network or other error — log and fallback to dashboard URL
+      console.error('Login request failed', err);
+      window.location = "{% url 'accounts_home' %}";
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

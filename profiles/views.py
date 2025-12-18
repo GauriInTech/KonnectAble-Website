@@ -32,3 +32,9 @@ def profile_update(request):
         form = ProfileForm(instance=profile)
 
     return render(request, 'profiles/profile_form.html', {'form': form})
+
+
+@login_required
+def my_profile(request):
+    """Redirect the authenticated user to their own profile detail page."""
+    return redirect('profile_detail', username=request.user.username)

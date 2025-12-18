@@ -2,27 +2,416 @@
 {% load static %}
 
 {% block content %}
-<div class="card profile-card">
-  <div class="card-body">
-    <h3 class="mb-3">Edit Profile</h3>
-    <form method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
-      <div class="row">
-        <div class="col-md-8">
-          <div class="mb-3">{{ form.headline.label_tag }}{{ form.headline }}</div>
-          <div class="mb-3">{{ form.location.label_tag }}{{ form.location }}</div>
-          <div class="mb-3">{{ form.skills.label_tag }}{{ form.skills }}</div>
-          <div class="mb-3">{{ form.portfolio_url.label_tag }}{{ form.portfolio_url }}</div>
-          <div class="mb-3">{{ form.bio.label_tag }}{{ form.bio }}</div>
+<style>
+  /* KonnectAble Profile Form Styles */
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+  
+  :root {
+    --konnect-primary: #6366f1;
+    --konnect-primary-light: #818cf8;
+    --konnect-secondary: #f472b6;
+    --konnect-accent: #34d399;
+    --konnect-bg: linear-gradient(135deg, #fdf4ff 0%, #ecfeff 50%, #f0fdf4 100%);
+    --konnect-card: #ffffff;
+    --konnect-text: #1e293b;
+    --konnect-text-muted: #64748b;
+    --konnect-border: #e2e8f0;
+    --konnect-input-bg: #f8fafc;
+    --konnect-shadow: 0 20px 60px -15px rgba(99, 102, 241, 0.25);
+    --konnect-shadow-hover: 0 25px 70px -15px rgba(99, 102, 241, 0.35);
+  }
+  
+  .form-container {
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    background: var(--konnect-bg);
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  
+  .profile-form-card {
+    background: var(--konnect-card);
+    border-radius: 2rem;
+    box-shadow: var(--konnect-shadow);
+    max-width: 700px;
+    width: 100%;
+    overflow: hidden;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .form-header {
+    background: linear-gradient(135deg, var(--konnect-primary) 0%, var(--konnect-secondary) 100%);
+    padding: 2rem 2rem 2.5rem;
+    position: relative;
+    text-align: center;
+  }
+  
+  .form-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: var(--konnect-card);
+    border-radius: 2rem 2rem 0 0;
+  }
+  
+  .form-header h3 {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  
+  .header-icon {
+    font-size: 1.5rem;
+    animation: bounce 2s ease-in-out infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  
+  .form-body {
+    padding: 2rem;
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 2rem;
+  }
+  
+  .form-main { display: flex; flex-direction: column; gap: 1.25rem; }
+  
+  .form-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .form-group {
+    position: relative;
+    animation: fadeIn 0.4s ease-out backwards;
+  }
+  
+  .form-group:nth-child(1) { animation-delay: 0.1s; }
+  .form-group:nth-child(2) { animation-delay: 0.15s; }
+  .form-group:nth-child(3) { animation-delay: 0.2s; }
+  .form-group:nth-child(4) { animation-delay: 0.25s; }
+  .form-group:nth-child(5) { animation-delay: 0.3s; }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 700;
+    color: var(--konnect-text);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+  }
+  
+  .form-group:focus-within label {
+    color: var(--konnect-primary);
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid var(--konnect-border);
+    border-radius: 1rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    background: var(--konnect-input-bg);
+    color: var(--konnect-text);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+  }
+  
+  .form-group input:hover,
+  .form-group textarea:hover,
+  .form-group select:hover {
+    border-color: var(--konnect-primary-light);
+    background: white;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    border-color: var(--konnect-primary);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+  
+  .form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  
+  .form-group input::placeholder,
+  .form-group textarea::placeholder {
+    color: var(--konnect-text-muted);
+    opacity: 0.7;
+  }
+  
+  /* Image Upload Styling */
+  .image-upload-wrapper {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 2px dashed var(--konnect-border);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .image-upload-wrapper:hover {
+    border-color: var(--konnect-primary-light);
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+  }
+  
+  .current-profile-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--konnect-primary-light);
+    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.3);
+    margin-bottom: 0.75rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .image-upload-wrapper:hover .current-profile-image {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px -3px rgba(99, 102, 241, 0.4);
+  }
+  
+  .profile-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--konnect-primary-light) 0%, var(--konnect-secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin: 0 auto 0.75rem;
+    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.3);
+    transition: transform 0.3s ease;
+  }
+  
+  .image-upload-wrapper:hover .profile-placeholder {
+    transform: scale(1.05);
+  }
+  
+  .upload-label {
+    font-weight: 700;
+    color: var(--konnect-text);
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  .upload-hint {
+    font-size: 0.8rem;
+    color: var(--konnect-text-muted);
+  }
+  
+  .image-upload-wrapper input[type="file"] {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    border: none;
+    background: transparent;
+  }
+  
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--konnect-border);
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    border-radius: 1rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .btn-save {
+    background: linear-gradient(135deg, var(--konnect-primary) 0%, var(--konnect-primary-light) 100%);
+    color: white;
+    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.4);
+    flex: 1;
+  }
+  
+  .btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.5);
+  }
+  
+  .btn-save:active {
+    transform: translateY(0);
+  }
+  
+  .btn-cancel {
+    background: transparent;
+    color: var(--konnect-text-muted);
+    padding: 0.875rem 1.25rem;
+  }
+  
+  .btn-cancel:hover {
+    color: var(--konnect-text);
+    background: var(--konnect-input-bg);
+  }
+  
+  /* Field hints */
+  .field-hint {
+    font-size: 0.8rem;
+    color: var(--konnect-text-muted);
+    margin-top: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  /* Focus states for accessibility */
+  .btn:focus {
+    outline: 3px solid var(--konnect-accent);
+    outline-offset: 2px;
+  }
+  
+  /* Decorative elements */
+  .form-decoration {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 1.25rem;
+    opacity: 0.8;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-container { padding: 1rem 0.75rem; }
+    .profile-form-card { border-radius: 1.5rem; }
+    .form-header { padding: 1.5rem 1.5rem 2rem; }
+    .form-body { padding: 1.5rem; }
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    .form-sidebar { order: -1; }
+    .form-actions { flex-direction: column; }
+    .btn-save { order: 1; }
+    .btn-cancel { order: 2; text-align: center; }
+  }
+</style>
+
+<div class="form-container">
+  <div class="profile-form-card">
+    <div class="form-header">
+      <span class="form-decoration">✨</span>
+      <h3>
+        <span class="header-icon">✏️</span>
+        Edit Profile
+      </h3>
+    </div>
+    
+    <div class="form-body">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-grid">
+          <div class="form-main">
+            <div class="form-group">
+              {{ form.headline.label_tag }}
+              {{ form.headline }}
+              <span class="field-hint">💡 What do you do? e.g., "Creative Designer"</span>
+            </div>
+            
+            <div class="form-group">
+              {{ form.location.label_tag }}
+              {{ form.location }}
+              <span class="field-hint">📍 Your city or region</span>
+            </div>
+            
+            <div class="form-group">
+              {{ form.skills.label_tag }}
+              {{ form.skills }}
+              <span class="field-hint">🎯 Separate skills with commas</span>
+            </div>
+            
+            <div class="form-group">
+              {{ form.portfolio_url.label_tag }}
+              {{ form.portfolio_url }}
+              <span class="field-hint">🔗 Link to your work or website</span>
+            </div>
+            
+            <div class="form-group">
+              {{ form.bio.label_tag }}
+              {{ form.bio }}
+              <span class="field-hint">💬 Tell us about yourself!</span>
+            </div>
+          </div>
+          
+          <div class="form-sidebar">
+            <div class="image-upload-wrapper">
+              {% if profile.profile_image %}
+                <img src="{{ profile.profile_image.url }}" alt="Current profile photo" class="current-profile-image">
+              {% else %}
+                <div class="profile-placeholder">😊</div>
+              {% endif %}
+              <span class="upload-label">Profile Photo</span>
+              <span class="upload-hint">{% if profile.profile_image %}Change your photo{% else %}Upload a friendly photo{% endif %}</span>
+              {{ form.profile_image }}
+            </div>
+          </div>
         </div>
-        <div class="col-md-4">
-          <div class="mb-3">{{ form.profile_image.label_tag }}{{ form.profile_image }}</div>
+        
+        <div class="form-actions">
+          <a class="btn btn-cancel" href="{% url 'profile_detail' request.user.username %}">
+            ← Cancel
+          </a>
+          <button class="btn btn-save" type="submit">
+            💾 Save Changes
+          </button>
         </div>
-      </div>
-      <button class="btn btn-primary" type="submit">Save</button>
-      <a class="btn btn-link" href="{% url 'profile_detail' request.user.username %}">Cancel</a>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
-
 {% endblock %}

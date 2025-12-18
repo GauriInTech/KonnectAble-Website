@@ -1,3 +1,6 @@
+{%extends "base.html" %}
+
+{% block content %}
 <h1>{{ profile.user.username }}</h1>
 
 {% if profile.profile_image %}
@@ -9,3 +12,4 @@
 {% if request.user == profile.user %}
   <a href="{% url 'profile_update' %}">Edit Profile</a>
 {% endif %}
+{% endblock %}
