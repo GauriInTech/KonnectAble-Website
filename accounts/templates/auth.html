@@ -302,7 +302,7 @@ button{
           <div class="form-content" style="flex:1;">
             <h1>Create account</h1>
           
-            <form method="post" action="{% url 'signup' %}" onsubmit="return false;">
+            <form method="post" action="{% url 'signup' %}">
               {% csrf_token %}
               <div class="form-row">
                 <label>Username</label>
@@ -313,7 +313,7 @@ button{
                 <div class="input"><input name="password" type="password" placeholder="Enter password"></div>
                 <label>Confirm</label>
                 <div class="input"><input name="confirm_password" type="password" placeholder="Confirm password"></div>
-                <button type="button" onclick="goLogin()">Signup</button>
+                <button type="submit">Signup</button>
               </div>
             </form>
             

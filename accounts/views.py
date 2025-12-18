@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect  # type: ignore
 from django.contrib.auth import authenticate, login  # type: ignore
 from .forms import SignupForm
+from .models import User
 from django.http import HttpResponse  # type: ignore
+from django.http import JsonResponse
 from posts.models import Post
+from profiles.models import Profile
 from django.urls import reverse
 import urllib.parse
 
@@ -21,22 +24,46 @@ def dashboard(request):
 
 def user_dashboard(request):
     posts = []
+    search_results = []
     if request.user.is_authenticated:
-        if request.method == 'POST':
-            content = request.POST.get('content')
-            image = request.FILES.get('image')
-
-            if content or image:
-                Post.objects.create(
-                    user=request.user,
-                    content=content,
-                    image=image
-                )
-                return redirect('accounts_home')
-
         posts = Post.objects.all().order_by('-created_at')
 
-    return render(request, "UserDashboard.html", {"username": request.user.username, "posts": posts})
+        # handle user search via GET ?q=
+        query = request.GET.get('q', '').strip()
+        search_results = []
+        if query:
+            # search by username, first_name, last_name, email (case-insensitive contains)
+            search_results = User.objects.filter(
+                username__icontains=query
+            ) | User.objects.filter(first_name__icontains=query) | User.objects.filter(last_name__icontains=query) | User.objects.filter(email__icontains=query)
+            # avoid including current user in results
+            search_results = search_results.exclude(pk=request.user.pk).distinct()
+        else:
+            search_results = []
+
+    return render(request, "UserDashboard.html", {"username": request.user.username, "posts": posts, "search_results": search_results, "query": request.GET.get('q', '')})
+
+
+def user_search_api(request):
+    """AJAX endpoint returning matching users for live suggestions."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'results': []})
+
+    q = request.GET.get('q', '').strip()
+    results = []
+    if q:
+        qs = User.objects.filter(username__icontains=q) | User.objects.filter(first_name__icontains=q) | User.objects.filter(last_name__icontains=q) | User.objects.filter(email__icontains=q)
+        qs = qs.exclude(pk=request.user.pk).distinct()[:10]
+        for u in qs:
+            results.append({
+                'username': u.username,
+                'full_name': u.get_full_name() or u.username,
+                'profile_url': reverse('profile_detail', args=[u.username]),
+                'image_url': (getattr(getattr(u, 'profile', None), 'profile_image', None).url
+                              if getattr(getattr(u, 'profile', None), 'profile_image', None) else '')
+            })
+
+    return JsonResponse({'results': results})
 
 def signup_view(request):
     if request.method == "POST":
@@ -47,12 +74,17 @@ def signup_view(request):
 
             # set password manually because clean() only compares, not saves
             password = form.cleaned_data.get("password")
-            user.set_password(password)
+            if password:
+                user.set_password(password)
+            else:
+                # If password is not provided, raise an error
+                form.add_error('password', 'Password is required.')
+                return render(request, "auth.html", {"form": form, "mode": "signup"})
 
             user.save()
 
-            # Do not auto-login after signup; redirect user to the login page
-            redirect_url = reverse('login') + '?created=1'
+            # Do not auto-login after signup; redirect user to the login form
+            redirect_url = reverse('auth') + '?mode=login&created=1'
             return redirect(redirect_url)
 
     else:
@@ -66,10 +98,19 @@ def login_view(request):
     next_target = request.GET.get('next') or reverse('accounts_home')
 
     if request.method == "POST":
-        username = request.POST.get("username")
+        username_or_email = request.POST.get("username")
         password = request.POST.get("password")
 
-        user = authenticate(request, username=username, password=password)
+        # Try to authenticate with username first
+        user = authenticate(request, username=username_or_email, password=password)
+
+        # If that fails, try with email
+        if user is None and '@' in username_or_email:
+            try:
+                user_obj = User.objects.get(email=username_or_email)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                pass
 
         if user is not None:
             login(request, user)

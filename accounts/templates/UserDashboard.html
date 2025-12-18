@@ -72,24 +72,99 @@
 			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 		}
 
-		.container {
-			max-width: 650px;
-			margin: 20px auto;
-			position: relative;
-			z-index: 1;
+  .container {
+    max-width: 650px;
+    margin: 20px auto;
+    position: relative;
+    z-index: 1;
+  }
+
+		/* Search bar styles */
+		.search-wrap {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			margin-bottom: 18px;
 		}
 
-		.create-post {
+		.search-input {
+			flex: 1;
+			padding: 12px 16px;
+			border-radius: 999px;
+			border: 2px solid rgba(0,0,0,0.06);
+			background: linear-gradient(180deg, #fff, #fbfbff);
+			box-shadow: 0 6px 18px rgba(103, 80, 164, 0.06);
+			font-size: 15px;
+		}
+
+		.search-btn {
+			padding: 10px 18px;
+			border-radius: 999px;
+			border: none;
+			background: linear-gradient(135deg, #ff8a00 0%, #e52e71 100%);
+			color: white;
+			font-weight: 700;
+			cursor: pointer;
+			box-shadow: 0 6px 18px rgba(229, 46, 113, 0.18);
+		}
+
+		.suggestions-dropdown {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
 			background: white;
-			padding: 20px;
-			border-radius: 16px;
-			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-			margin-bottom: 20px;
+			border-radius: 12px;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+			max-height: 200px;
+			overflow-y: auto;
+			z-index: 1000;
+			margin-top: 5px;
+		}
+
+		.suggestion-item {
+			padding: 12px 16px;
+			cursor: pointer;
+			border-bottom: 1px solid #f0f0f0;
+			transition: background-color 0.2s ease;
 			display: flex;
-			flex-direction: column;
-			gap: 12px;
-			animation: slideInUp 0.5s ease-out;
-			transition: transform 0.3s ease, box-shadow 0.3s ease;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.suggestion-item:last-child {
+			border-bottom: none;
+		}
+
+		.suggestion-item:hover {
+			background-color: #f8f9fa;
+		}
+
+		.suggestion-avatar {
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: bold;
+			color: white;
+			font-size: 12px;
+		}
+
+		.suggestion-text {
+			flex: 1;
+		}
+
+		.suggestion-username {
+			font-weight: 600;
+			color: #333;
+		}
+
+		.suggestion-fullname {
+			font-size: 12px;
+			color: #666;
 		}
 
 		.create-post:hover {
@@ -106,209 +181,244 @@
 			font-size: 16px;
 		}
 
-		.avatar-circle {
-			width: 45px;
-			height: 45px;
-			border-radius: 50%;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			font-weight: bold;
-			color: white;
-			font-size: 18px;
-			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-			transition: transform 0.3s ease;
-		}
-
-		.avatar-circle:hover {
-			transform: scale(1.1) rotate(5deg);
-		}
-
-		.post-card {
-			background: white;
-			padding: 24px;
-			border-radius: 16px;
-			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-			margin-bottom: 20px;
-			animation: slideInUp 0.5s ease-out;
-			transition: transform 0.3s ease, box-shadow 0.3s ease;
-			border-left: 4px solid transparent;
-		}
-
-		.post-card:hover {
-			transform: translateY(-4px);
-			box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-			border-left-color: #667eea;
-		}
-
-		textarea {
-			width: 100%;
-			border: 2px solid #e0e0e0;
-			border-radius: 12px;
-			font-size: 16px;
-			resize: none;
-			padding: 12px 16px;
-			font-family: inherit;
-			transition: border-color 0.3s ease, box-shadow 0.3s ease;
-			background: #fafafa;
-		}
-
-		textarea:focus {
-			outline: none;
-			border-color: #667eea;
-			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-			background: white;
-		}
-
-		input[type="file"] {
-			width: 100%;
-			padding: 12px;
-			border: 2px dashed #e0e0e0;
-			border-radius: 12px;
-			margin-top: 8px;
-			cursor: pointer;
-			transition: all 0.3s ease;
-			background: #fafafa;
-			font-size: 14px;
-		}
-
-		input[type="file"]:hover {
-			border-color: #667eea;
-			background: #f0f4ff;
-		}
-
-		.post-header {
-			font-weight: bold;
-			margin-bottom: 15px;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			color: #333;
-		}
-
-		.post-time {
-			font-size: 13px;
-			color: #999;
-			font-weight: normal;
-		}
-
-		.post-actions {
-			display: flex;
-			gap: 10px;
-			margin-top: 20px;
-			padding-top: 15px;
-			border-top: 1px solid #f0f0f0;
-			flex-wrap: wrap;
-		}
-
-		.action-btn {
-			background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-			border: none;
-			cursor: pointer;
-			padding: 10px 18px;
-			border-radius: 20px;
-			font-size: 14px;
-			font-weight: 600;
-			transition: all 0.3s ease;
-			color: #333;
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-		}
-
-		.action-btn:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-			background: linear-gradient(135deg, #ffffff 0%, #d4dce8 100%);
-		}
-
-		.action-btn:active {
-			transform: translateY(0);
-		}
-
-		.like-btn:hover {
-			background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-			color: white;
-		}
-
-		.main-btn {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			padding: 10px 24px;
-			border: none;
-			border-radius: 25px;
-			cursor: pointer;
-			font-weight: bold;
-			font-size: 15px;
-			transition: all 0.3s ease;
-			box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-		}
-
-		.main-btn:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-			background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-		}
-
-		.main-btn:active {
-			transform: translateY(0);
-		}
-
-		.comment-form {
-			margin-top: 15px;
-			padding: 15px;
-			background: #fafbfc;
-			border-radius: 12px;
-			animation: fadeIn 0.3s ease;
-		}
-
-		.comment-form textarea {
-			background: white;
-		}
-
-		.post-card img {
-			max-width: 100%;
-			border-radius: 12px;
-			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-			transition: transform 0.3s ease;
-		}
-
-		.post-card img:hover {
-			transform: scale(1.02);
-		}
-
-		.post-card > div[style*="margin-top:10px"] {
-			margin-top: 12px !important;
-			padding: 12px !important;
-			background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%) !important;
-			border-radius: 12px !important;
-			border-left: 3px solid #667eea !important;
-			animation: slideIn 0.3s ease !important;
-		}
-
-		.post-card > div[style*="margin-top:10px"] strong {
-			color: #667eea;
-		}
-
-		.post-card p {
-			line-height: 1.6;
-			color: #444;
-			font-size: 15px;
-		}
-
 		form {
 			display: inline;
 		}
 
-		.container > p {
-			text-align: center;
-			color: white;
-			background: rgba(255, 255, 255, 0.2);
-			backdrop-filter: blur(10px);
-			padding: 40px;
-			border-radius: 16px;
-			font-size: 18px;
-			animation: fadeIn 0.8s ease;
-		}
+  /* CREATE POST */
+  .create-post {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 32px rgba(147, 112, 219, 0.15);
+    border: 2px solid transparent;
+    background-image: linear-gradient(white, white), linear-gradient(135deg, #a78bfa, #f472b6);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .create-post-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .create-post-header span {
+    color: #6b7280;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .avatar-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+
+  .create-post textarea {
+    width: 100%;
+    border: 2px solid #e9d5ff;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 15px;
+    resize: none;
+    transition: all 0.3s ease;
+    background: #faf5ff;
+  }
+
+  .create-post textarea:focus {
+    outline: none;
+    border-color: #a78bfa;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.15);
+  }
+
+  .create-post input[type="file"] {
+    margin-top: 12px;
+    padding: 10px;
+    border: 2px dashed #d8b4fe;
+    border-radius: 12px;
+    width: 100%;
+    cursor: pointer;
+    background: #fdf4ff;
+    transition: all 0.3s ease;
+  }
+
+  .create-post input[type="file"]:hover {
+    border-color: #a78bfa;
+    background: #f3e8ff;
+  }
+
+  .main-btn {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+  }
+
+  .main-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+  }
+
+  .main-btn:active {
+    transform: translateY(0);
+  }
+
+  /* POST CARD */
+  .post-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid #f3e8ff;
+  }
+
+  .post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(147, 112, 219, 0.18);
+  }
+
+  .post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .post-header span:first-child {
+    font-weight: 700;
+    color: #7c3aed;
+    font-size: 16px;
+  }
+
+  .post-time {
+    font-size: 13px;
+    color: #9ca3af;
+    background: #f5f3ff;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .post-card p {
+    color: #374151;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .post-card img {
+    max-width: 100%;
+    border-radius: 16px;
+    margin-top: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  /* POST ACTIONS */
+  .post-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #f3e8ff;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    background: linear-gradient(135deg, #f5f3ff, #fce7f3);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #7c3aed;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .action-btn:hover {
+    background: linear-gradient(135deg, #ede9fe, #fbcfe8);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  }
+
+  .like-btn {
+    background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+    color: #3b82f6;
+  }
+
+  .like-btn:hover {
+    background: linear-gradient(135deg, #bfdbfe, #c7d2fe);
+  }
+
+  /* COMMENT FORM */
+  .comment-form {
+    margin-top: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #faf5ff, #fdf2f8);
+    border-radius: 16px;
+    border: 1px solid #f3e8ff;
+  }
+
+  .comment-form textarea {
+    width: 100%;
+    border: 2px solid #e9d5ff;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    resize: none;
+    background: white;
+    transition: all 0.3s ease;
+  }
+
+  .comment-form textarea:focus {
+    outline: none;
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
+  }
+
+  /* COMMENTS */
+  .post-card > div[style*="background:#f9f9f9"] {
+    background: linear-gradient(135deg, #f5f3ff, #fdf4ff) !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    margin-top: 12px !important;
+    border-left: 4px solid #c4b5fd !important;
+  }
+
+  .post-card > div[style*="background:#f9f9f9"] strong {
+    color: #7c3aed;
+  }
+
+  /* EMPTY STATE */
+  .container > p[style*="text-align:center"] {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    color: #9ca3af !important;
+    font-size: 16px;
+    box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
+  }
 
 		@keyframes fadeIn {
 			from {
@@ -352,29 +462,28 @@
 			}
 		}
 
-		/* Responsive design */
-		@media (max-width: 768px) {
-			h1 {
-				font-size: 2em;
-			}
-
-			.container {
-				margin: 10px auto;
-			}
-
-			.post-card, .create-post {
-				padding: 16px;
-			}
-
-			.post-actions {
-				gap: 8px;
-			}
-
-			.action-btn {
-				padding: 8px 14px;
-				font-size: 13px;
-			}
-		}
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    body {
+      padding: 12px;
+    }
+    
+    .create-post,
+    .post-card {
+      padding: 18px;
+      border-radius: 16px;
+    }
+    
+    .post-actions {
+      justify-content: center;
+    }
+    
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+      min-width: 100px;
+    }
+  }
 
 		/* Cute loading animation for buttons */
 		.main-btn:disabled {
@@ -399,6 +508,12 @@
 		::-webkit-scrollbar-thumb:hover {
 			background: rgba(255, 255, 255, 0.5);
 		}
+
+		.logout-btn:hover {
+			background: rgba(255, 255, 255, 0.3);
+			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+		}
 	</style>
 </head>
 <body>
@@ -406,28 +521,43 @@
 	<p>Have a Beautifull Day! </p>
 
 {% if request.user.is_authenticated %}
-<a href="{% url 'profile_detail' request.user.username %}">
-	View My Profile
-</a>
+<div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
+	<a href="{% url 'profile_detail' request.user.username %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
+		My Profile
+	</a>
+	<form method="post" action="{% url 'logout' %}" style="display: inline;">
+		{% csrf_token %}
+		<div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
+		<button type="submit" class="logout-btn" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); cursor: pointer; width: 160px; text-align: center;">
+			Logout
+		</button>
+		</div>
+	</form>
+</div>
 
 
 	<!-- Embedded posts feed -->
 	<div class="container">
-		<div class="create-post">
-			<div class="create-post-header">
-				<div class="avatar-circle">{{ request.user.username|first|upper }}</div>
-				<span>Start a post</span>
-			</div>
+		<!-- Search users (server-side rendered results) -->
+		<form method="get" action="{% url 'accounts_home' %}" class="search-wrap" style="width:100%; position: relative;">
+			<input type="search" name="q" class="search-input" value="{{ query }}" placeholder="Search users by name or username..." id="search-input">
+			<button type="submit" class="search-btn">Search</button>
+			<div id="suggestions" class="suggestions-dropdown" style="display: none;"></div>
+		</form>
 
-			<form method="post" action="" enctype="multipart/form-data">
-				{% csrf_token %}
-				<textarea name="content" rows="3" placeholder="Share your thoughts..."></textarea>
-				<input type="file" name="image" accept="image/*">
-				<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
-					<button type="submit" class="main-btn">Post</button>
-				</div>
-			</form>
-		</div>
+		{% if search_results %}
+			<div style="margin-bottom:16px; background: rgba(255,255,255,0.9); padding:12px; border-radius:12px;">
+				<strong>Search results:</strong>
+				<ul style="margin-top:8px; list-style:none; padding-left:0;">
+					{% for user in search_results %}
+						<li style="padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04);">
+							<a href="{% url 'profile_detail' user.username %}" style="text-decoration:none; color:#333; font-weight:600;">{{ user.get_full_name|default:user.username }} ({{ user.username }})</a>
+						</li>
+					{% endfor %}
+				</ul>
+			</div>
+		{% endif %}
+
 
 		{% if posts %}
 			{% for post in posts %}
@@ -447,15 +577,15 @@
 					</div>
 
 					<div class="post-actions">
-						<form method="post" action="/posts/like/{{ post.id }}/">
+						<form method="post" action="{% url 'like_post' post.id %}">
 							{% csrf_token %}
-							<button type="button" class="action-btn like-btn" data-post-id="{{ post.id }}">👍 Like ({{ post.like_set.count }})</button>
+							<button type="submit" class="action-btn like-btn">👍 Like ({{ post.like_set.count }})</button>
 						</form>
 
 						<a href="#comment-form-{{ post.id }}" class="action-btn" style="text-decoration:none; display:inline-block; text-align:center;">💬 Comment</a>
 
 						{% if post.user == request.user %}
-							<form method="post" action="/posts/delete/{{ post.id }}/" style="display:inline;">
+							<form method="post" action="{% url 'delete_post' post.id %}" style="display:inline;">
 								{% csrf_token %}
 								<button type="submit" class="action-btn" onclick="return confirm('Delete this post?')" style="color:#e74c3c;">🗑️ Delete</button>
 							</form>
@@ -463,7 +593,7 @@
 					</div>
 
 					<div id="comment-form-{{ post.id }}" class="comment-form">
-						<form method="post" action="/posts/comment/{{ post.id }}/">
+						<form method="post" action="{% url 'add_comment' post.id %}">
 							{% csrf_token %}
 							<textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%;"></textarea>
 							<button type="submit" class="main-btn" style="margin-top:8px;">Comment</button>
@@ -484,34 +614,77 @@
 		{% endif %}
 	</div>
 
-	<script>
-	document.addEventListener('DOMContentLoaded', function () {
-		const tokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
-		const csrftoken = tokenEl ? tokenEl.value : '';
 
-		document.querySelectorAll('.like-btn').forEach(function (btn) {
-			btn.addEventListener('click', function () {
-				const postId = this.dataset.postId;
-
-				fetch(`/posts/like/${postId}/`, {
-					method: 'POST',
-					headers: {
-						'X-CSRFToken': csrftoken,
-						'X-Requested-With': 'XMLHttpRequest'
-					}
-				})
-				.then(response => response.json())
-				.then(data => {
-					this.textContent = `👍 Like (${data.likes_count})`;
-				})
-				.catch(err => console.error(err));
-			});
-		});
-	});
-	</script>
 
 {% else %}
 <p><a href="{% url 'login' %}">Log in</a> to view your profile.</p>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrftoken = tokenEl ? tokenEl.value : '';
+
+    // Autocomplete functionality
+    const searchInput = document.getElementById('search-input');
+    const suggestionsDiv = document.getElementById('suggestions');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (query.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`{% url 'user_search_api' %}?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                suggestionsDiv.innerHTML = '';
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(user => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <div class="suggestion-avatar">${user.username.charAt(0).toUpperCase()}</div>
+                            <div class="suggestion-text">
+                                <div class="suggestion-username">${user.username}</div>
+                                <div class="suggestion-fullname">${user.full_name}</div>
+                            </div>
+                        `;
+                        item.addEventListener('click', function() {
+                            window.location.href = user.profile_url;
+                        });
+                        suggestionsDiv.appendChild(item);
+                    });
+                    suggestionsDiv.style.display = 'block';
+                } else {
+                    suggestionsDiv.style.display = 'none';
+                }
+            })
+            .catch(err => console.error('Error fetching suggestions:', err));
+        }, 300); // 300ms debounce
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+            suggestionsDiv.style.display = 'none';
+        }
+    });
+
+    // Hide suggestions on form submit
+    document.querySelector('.search-wrap form').addEventListener('submit', function() {
+        suggestionsDiv.style.display = 'none';
+    });
+});
+</script>
 </body>
 </html>

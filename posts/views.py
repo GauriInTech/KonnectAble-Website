@@ -29,11 +29,14 @@ def like_post(request, post_id):
     like, created = Like.objects.get_or_create(user=request.user, post=post)
     if not created:
         like.delete()
-    return JsonResponse({
-        "likes_count": post.like_set.count(),
-        "liked": created,
-        "post_id": post.id
-    })
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            "likes_count": post.like_set.count(),
+            "liked": created,
+            "post_id": post.id
+        })
+    else:
+        return redirect('accounts_home')
 
 
 @login_required
