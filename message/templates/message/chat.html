@@ -1,14 +1,13 @@
+{% extends "base.html" %}
 {% load static %}
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+{% block head %}
   <title>Chat</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="{% static 'css/chat.css' %}">
-</head>
-<body class="chat-theme">
+{% endblock %}
+
+{% block content %}
   <div class="chat-wrap">
     <div class="chat-panel">
       <div class="chat-header">
@@ -16,7 +15,6 @@
           <a href="/messages/inbox/" class="back-link">← Inbox</a>
           <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
         </div>
-        
       </div>
 
       <div id="messages" class="messages" aria-live="polite"></div>
@@ -27,110 +25,111 @@
       </form>
     </div>
   </div>
+{% endblock %}
 
-  <script>
-    const conversationId = '{{ conversation_id }}';
-    const userId = '{{ request.user.pk }}';
+{% block scripts %}
+<script>
+  const conversationId = '{{ conversation_id }}';
+  const userId = '{{ request.user.pk }}';
 
-    function addMessage(obj){
-      const wrapper = document.createElement('div');
-      wrapper.className = 'chat-line';
+  function addMessage(obj){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chat-line';
 
-      const isMe = (obj.sender_id == userId);
+    const isMe = (obj.sender_id == userId);
 
-      const avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      if (obj.sender_avatar) {
-        const img = document.createElement('img');
-        img.src = obj.sender_avatar;
-        img.alt = obj.sender_username || 'avatar';
-        img.style.width = '40px'; img.style.height = '40px'; img.style.borderRadius = '50%';
-        avatar.innerHTML = '';
-        avatar.appendChild(img);
-      } else {
-        avatar.textContent = (obj.sender_username || '?').charAt(0).toUpperCase();
-      }
-
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
-      bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()}</div>`;
-
-      const line = document.createElement('div');
-      line.style.display = 'flex';
-      line.style.alignItems = 'flex-start';
-      line.style.gap = '10px';
-      if (isMe) {
-        line.style.justifyContent = 'flex-end';
-        line.appendChild(bubble);
-        line.appendChild(avatar);
-      } else {
-        line.appendChild(avatar);
-        line.appendChild(bubble);
-      }
-
-      document.getElementById('messages').appendChild(line);
-      document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    if (obj.sender_avatar) {
+      const img = document.createElement('img');
+      img.src = obj.sender_avatar;
+      img.alt = obj.sender_username || 'avatar';
+      img.style.width = '40px'; img.style.height = '40px'; img.style.borderRadius = '50%';
+      avatar.innerHTML = '';
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = (obj.sender_username || '?').charAt(0).toUpperCase();
     }
 
-    // fetch existing messages
-    fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
-      data.messages.forEach(addMessage);
-    });
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
+    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()}</div>`;
 
-    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
-    const socket = new WebSocket(wsUrl);
-
-    socket.addEventListener('open', function() {
-      console.log('WebSocket open', wsUrl);
-    });
-
-    socket.addEventListener('error', function(err){
-      console.error('WebSocket error', err);
-    });
-
-    socket.onmessage = function(e){
-      const data = JSON.parse(e.data);
-      addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at });
+    const line = document.createElement('div');
+    line.style.display = 'flex';
+    line.style.alignItems = 'flex-start';
+    line.style.gap = '10px';
+    if (isMe) {
+      line.style.justifyContent = 'flex-end';
+      line.appendChild(bubble);
+      line.appendChild(avatar);
+    } else {
+      line.appendChild(avatar);
+      line.appendChild(bubble);
     }
 
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-    }
+    document.getElementById('messages').appendChild(line);
+    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+  }
 
-    document.getElementById('chat-form').addEventListener('submit', function(ev){
-      ev.preventDefault();
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if(!text) return;
+  // fetch existing messages
+  fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
+    data.messages.forEach(addMessage);
+  });
 
-      // prefer websocket when open
-      if (socket && socket.readyState === 1) {
-        socket.send(JSON.stringify({ message: text }));
-        input.value = '';
-        return;
-      }
+  const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
+  const socket = new WebSocket(wsUrl);
 
-      // fallback to HTTP POST
-      const csrftoken = getCookie('csrftoken');
-      fetch(`/messages/api/conversation/${conversationId}/send/`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': csrftoken || ''
-        },
-        body: `message=${encodeURIComponent(text)}`
-      }).then(r=>r.json()).then(data=>{
-        if (data.message) {
-          addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at });
-        }
-      }).catch(err=>console.error('Send fallback failed', err));
+  socket.addEventListener('open', function() {
+    console.log('WebSocket open', wsUrl);
+  });
 
+  socket.addEventListener('error', function(err){
+    console.error('WebSocket error', err);
+  });
+
+  socket.onmessage = function(e){
+    const data = JSON.parse(e.data);
+    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at });
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  document.getElementById('chat-form').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if(!text) return;
+
+    // prefer websocket when open
+    if (socket && socket.readyState === 1) {
+      socket.send(JSON.stringify({ message: text }));
       input.value = '';
-    });
-  </script>
-</body>
-</html>
+      return;
+    }
+
+    // fallback to HTTP POST
+    const csrftoken = getCookie('csrftoken');
+    fetch(`/messages/api/conversation/${conversationId}/send/`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken || ''
+      },
+      body: `message=${encodeURIComponent(text)}`
+    }).then(r=>r.json()).then(data=>{
+      if (data.message) {
+        addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at });
+      }
+    }).catch(err=>console.error('Send fallback failed', err));
+
+    input.value = '';
+  });
+</script>
+{% endblock %}

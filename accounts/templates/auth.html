@@ -110,7 +110,7 @@ body::after{
   95%{transform:scaleY(0.1)}
 }
 
-.blob{width:350px;height:350px}
+.blob{width:420px;height:420px}
 .pupil{fill:#1b1b1b}
 .eye{animation:blink 4s infinite}
 .robot-card:hover .mouth{stroke:#ff6b6b}
@@ -153,7 +153,7 @@ body.login-mode .signup{
   width:100%;
   max-width:800px;
   background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.75));
-  padding:500px;
+  padding:24px;
   border-radius:16px;
   box-shadow:0 18px 40px rgba(8,18,30,0.08);
   backdrop-filter: blur(6px);
@@ -203,9 +203,14 @@ h1{margin:0 0 8px;font-size:26px}
 }
 .hero-heading .brand{
   display:inline-block;
-  font-family:Pacifico, cursive;
+  /* Use a strong serif for the brand to match the heading */
+  font-family:'Playfair Display', Georgia, serif;
+  font-weight:700;
+  font-style:normal;
   font-size:44px;
-  color:var(--accent2);
+  color:var(--accent2); /* restored original brand color */
+  letter-spacing:0.6px;
+  text-transform:capitalize;
   margin-right:8px;
   vertical-align:middle;
   transform-origin:center;
@@ -264,8 +269,29 @@ button{
   .auth{grid-template-columns:1fr}
   body.login-mode .auth{grid-template-columns:1fr}
   .panel.robot{display:none}
-  .hero-heading{font-size:26px}
-  .hero-heading .brand{font-size:32px}
+  .hero-heading{font-size:20px;margin:12px 0}
+  .hero-heading .brand{font-size:28px}
+
+  /* Make the card and form stack vertically on narrow screens */
+  .card{flex-direction:column;align-items:stretch;padding:16px;max-width:520px;margin:0 auto}
+  .robot-card{margin-bottom:12px;display:flex;justify-content:center}
+  .robot-card .blob{width:220px;height:220px}
+  .auth .decor-blob{display:none}
+  .form-box.signup .card,
+  .form-box.login .card{min-height:auto;padding:12px;margin-bottom:12px}
+  .form-content{padding:0}
+  .form-row{padding:0;margin-bottom:12px}
+  input{font-size:15px}
+  .input{padding:10px}
+  button{width:100%;padding:12px}
+}
+
+/* Extra small screens */
+@media(max-width:420px){
+  .hero-heading{font-size:18px}
+  .hero-heading .brand{font-size:22px}
+  .robot-card .blob{width:160px;height:160px}
+  .pupil{r:8}
 }
 </style>
 </head>
@@ -290,11 +316,11 @@ button{
           <div class="robot-card">
             <svg class="blob" viewBox="0 0 500 400" id="robotSVG">
               <defs><filter id="soft"><feGaussianBlur stdDeviation="10"/></filter></defs>
-              <circle cx="250" cy="150" r="120" fill="#e0f7ff" filter="url(#soft)"/>
-              <ellipse class="eye" cx="210" cy="125" rx="12" ry="9" fill="#fff"/>
-              <ellipse class="eye" cx="290" cy="125" rx="12" ry="9" fill="#fff"/>
-              <circle class="pupil" cx="210" cy="125" r="7" fill="#1b1b1b"/>
-              <circle class="pupil" cx="290" cy="125" r="7" fill="#1b1b1b"/>
+              <circle cx="250" cy="150" r="120" fill="#78bfdc" filter="url(#soft)"/>
+              <ellipse class="eye" cx="210" cy="125" rx="22" ry="16" fill="#fff"/>
+              <ellipse class="eye" cx="290" cy="125" rx="22" ry="16" fill="#fff"/>
+              <circle class="pupil" cx="210" cy="125" r="14" fill="#1b1b1b"/>
+              <circle class="pupil" cx="290" cy="125" r="14" fill="#1b1b1b"/>
               <path d="M212 160 Q250 180 288 160" stroke="#ff8b8b" stroke-width="4" fill="none"/>
             </svg>
             <div class="alt">Already a member? <a onclick="goLogin()">Log in</a></div>
@@ -327,11 +353,11 @@ button{
           <div class="robot-card">
             <svg class="blob" viewBox="0 0 500 400" id="robotSVG">
               <defs><filter id="soft"><feGaussianBlur stdDeviation="10"/></filter></defs>
-              <circle cx="250" cy="150" r="120" fill="#e0f7ff" filter="url(#soft)"/>
-              <ellipse class="eye" cx="210" cy="125" rx="12" ry="9" fill="#fff"/>
-              <ellipse class="eye" cx="290" cy="125" rx="12" ry="9" fill="#fff"/>
-              <circle class="pupil" cx="210" cy="125" r="7" fill="#1b1b1b"/>
-              <circle class="pupil" cx="290" cy="125" r="7" fill="#1b1b1b"/>
+              <circle cx="250" cy="150" r="120" fill="#78bfdc" filter="url(#soft)"/>
+              <ellipse class="eye" cx="210" cy="125" rx="22" ry="16" fill="#fff"/>
+              <ellipse class="eye" cx="290" cy="125" rx="22" ry="16" fill="#fff"/>
+              <circle class="pupil" cx="210" cy="125" r="14" fill="#1b1b1b"/>
+              <circle class="pupil" cx="290" cy="125" r="14" fill="#1b1b1b"/>
               <path d="M212 160 Q250 180 288 160" stroke="#ff8b8b" stroke-width="4" fill="none"/>
             </svg>
             <div class="alt">New here? <a onclick="goSignup()">Create account</a></div>
