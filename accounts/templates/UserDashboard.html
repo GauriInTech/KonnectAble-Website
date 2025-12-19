@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
+  <meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>User Dashboard</title>
 	<style>
@@ -78,6 +78,49 @@
     position: relative;
     z-index: 1;
   }
+
+  /* Feed wrapper used inside dashboard to avoid nested .container sizing */
+  .feed-wrap {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Dashboard layout */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 22px;
+    max-width: 1100px;
+    margin: 20px auto;
+  }
+
+  .main-col {
+    min-width: 0;
+  }
+
+  .sidebar {
+    position: relative;
+  }
+
+  .sidebar .card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+    border: 1px solid #f3e8ff;
+  }
+
+  .sidebar .card h3 {
+    margin-bottom: 8px;
+    color: #4b2cbf;
+    font-size: 16px;
+  }
+
+  .sidebar ul { list-style:none; padding-left:0; margin:0; }
+  .sidebar li { padding:8px 0; border-bottom:1px solid #f3eefb; }
+  .sidebar li:last-child { border-bottom:none; }
 
 		/* Search bar styles */
 		.search-wrap {
@@ -485,6 +528,23 @@
     }
   }
 
+  /* Dashboard responsive: collapse to single column on smaller screens */
+  @media (max-width: 900px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      order: 2;
+    }
+    .main-col {
+      order: 1;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 8px;
+    }
+  }
+
 		/* Cute loading animation for buttons */
 		.main-btn:disabled {
 			opacity: 0.7;
@@ -525,6 +585,12 @@
 	<a href="{% url 'profile_detail' request.user.username %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
 		My Profile
 	</a>
+  <a href="{% url 'job_index' %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
+    Jobs
+  </a>
+  <a href="{% url 'message:inbox' %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
+    Messages
+  </a>
             <form method="post" action="{% url 'logout' %}" style="display: inline;">
 		{% csrf_token %}
 		<div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
@@ -535,15 +601,16 @@
 	</form>
 </div>
 
+  <!-- Search users (full width above grid) -->
+    <form method="get" action="{% url 'accounts_home' %}" class="search-wrap" style="width:calc(100% - 120px); margin: 0 auto 18px; max-width:1100px; position: relative;">
+      <input type="search" name="q" class="search-input" value="{{ query }}" placeholder="Search users by name or username..." id="search-input">
+      <button type="submit" class="search-btn">Search</button>
+      <div id="suggestions" class="suggestions-dropdown" style="display: none;"></div>
+    </form>
 
-	<!-- Embedded posts feed -->
-	<div class="container">
-		<!-- Search users (server-side rendered results) -->
-    <form method="get" action="{% url 'accounts_home' %}" class="search-wrap" style="width:100%; position: relative;">
-			<input type="search" name="q" class="search-input" value="{{ query }}" placeholder="Search users by name or username..." id="search-input">
-			<button type="submit" class="search-btn">Search</button>
-			<div id="suggestions" class="suggestions-dropdown" style="display: none;"></div>
-		</form>
+  <!-- Embedded posts feed -->
+  <div class="container dashboard-grid">
+    <main class="main-col">
 
 		{% if search_results %}
 			<div style="margin-bottom:16px; background: rgba(255,255,255,0.9); padding:12px; border-radius:12px;">
@@ -552,18 +619,22 @@
 					{% for user in search_results %}
 						<li style="padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04);">
 							<a href="{% url 'profile_detail' user.username %}" style="text-decoration:none; color:#333; font-weight:600;">{{ user.get_full_name|default:user.username }} ({{ user.username }})</a>
-						</li>
-					{% endfor %}
-				</ul>
-			</div>
-		{% endif %}
-
-
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
       <!-- Create-post form posts to the posts app so layout stays consistent -->
-      <div class="container">
+      <div class="feed-wrap">
         <div class="create-post">
           <div class="create-post-header">
-            <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
+            <div>
+              {% if profile and profile.profile_image %}
+                <img src="{{ profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
+              {% else %}
+                <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
+              {% endif %}
+            </div>
             <span>Start a post</span>
           </div>
           <form method="post" action="{% url 'posts' %}" enctype="multipart/form-data">
@@ -630,11 +701,84 @@
           <p style="text-align:center; color:#666;">No posts yet. Create the first one!</p>
         {% endif %}
       </div>
-	</div>
 
+      </main>
 
+      <aside class="sidebar">
+        <div class="card">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div>
+              {% if profile and profile.profile_image %}
+                <img src="{{ profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;font-size:20px;">
+              {% else %}
+                <div class="avatar-circle" style="width:56px;height:56px;font-size:20px;">{{ request.user.username|first|upper }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <h3>{{ request.user.get_full_name|default:request.user.username }}</h3>
+              {% if profile and profile.headline %}
+                <div style="font-size:13px;color:#6b7280;">{{ profile.headline }}</div>
+              {% endif %}
+              {% if profile and profile.location %}
+                <div style="font-size:12px;color:#9ca3af;">{{ profile.location }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <a href="{% url 'profile_detail' request.user.username %}" class="action-btn" style="flex:1; text-align:center; padding:8px 10px;">View Profile</a>
+            <a href="{% url 'profile_detail' request.user.username %}" class="action-btn" style="flex:1; text-align:center; padding:8px 10px;">Edit</a>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:12px;">
+            <div style="flex:1; text-align:center;">
+              <div style="font-weight:700; color:#7c3aed;">{{ supporters_count }}</div>
+              <div style="font-size:12px; color:#6b7280;">Supporters</div>
+            </div>
+            <div style="flex:1; text-align:center;">
+              <div style="font-weight:700; color:#7c3aed;">{{ supporting_count }}</div>
+              <div style="font-size:12px; color:#6b7280;">Supporting</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>My Applications ({{ applications_count }})</h3>
+          {% if my_applications %}
+            <ul>
+              {% for app in my_applications %}
+                <li>
+                  <strong style="display:block">{{ app.job.title }}</strong>
+                  <small style="color:#6b7280">Status: {{ app.status }}</small>
+                </li>
+              {% endfor %}
+            </ul>
+            <div style="margin-top:8px; text-align:right;"><a href="{% url 'job_index' %}">View all</a></div>
+          {% else %}
+            <div style="color:#9ca3af;">No recent applications</div>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h3>Recommended Jobs</h3>
+          {% if recommended_jobs %}
+            <ul>
+              {% for job in recommended_jobs %}
+                <li>
+                  <strong style="display:block">{{ job.title }}</strong>
+                  <small style="color:#6b7280">{{ job.company }}</small>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="color:#9ca3af;">No recommendations yet</div>
+          {% endif %}
+        </div>
+      </aside>
+
+    </div>
 
 {% else %}
+
+
 <p><a href="{% url 'login' %}">Log in</a> to view your profile.</p>
 {% endif %}
 
@@ -668,19 +812,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 suggestionsDiv.innerHTML = '';
                 if (data.results && data.results.length > 0) {
                     data.results.forEach(user => {
-                        const item = document.createElement('div');
-                        item.className = 'suggestion-item';
-                        item.innerHTML = `
-                            <div class="suggestion-avatar">${user.username.charAt(0).toUpperCase()}</div>
-                            <div class="suggestion-text">
-                                <div class="suggestion-username">${user.username}</div>
-                                <div class="suggestion-fullname">${user.full_name}</div>
-                            </div>
-                        `;
-                        item.addEventListener('click', function() {
-                            window.location.href = user.profile_url;
-                        });
-                        suggestionsDiv.appendChild(item);
+                      const item = document.createElement('div');
+                      item.className = 'suggestion-item';
+
+                      // avatar
+                      const avatar = document.createElement('div');
+                      avatar.className = 'suggestion-avatar';
+                      if (user.avatar_url) {
+                        const img = document.createElement('img');
+                        img.src = user.avatar_url;
+                        img.alt = user.username;
+                        img.style.width = '30px'; img.style.height = '30px'; img.style.borderRadius = '50%'; img.style.objectFit = 'cover';
+                        avatar.appendChild(img);
+                      } else {
+                        avatar.textContent = user.username.charAt(0).toUpperCase();
+                      }
+
+                      const text = document.createElement('div');
+                      text.className = 'suggestion-text';
+                      text.innerHTML = `
+                        <div class="suggestion-username">${user.username}</div>
+                        <div class="suggestion-fullname">${user.full_name}</div>
+                      `;
+
+                      item.appendChild(avatar);
+                      item.appendChild(text);
+
+                      item.addEventListener('click', function() {
+                        window.location.href = user.profile_url;
+                      });
+                      suggestionsDiv.appendChild(item);
                     });
                     suggestionsDiv.style.display = 'block';
                 } else {

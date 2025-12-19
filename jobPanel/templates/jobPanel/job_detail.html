@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" href="{% static 'css/applicant_dashboard.css' %}">
+{% endblock %}
+{% block content %}
+  <div class="job-detail-container">
+    <div class="job-detail-header">
+      <h2>{{ job.title }}</h2>
+      <div class="job-company">{{ job.company }}</div>
+    </div>
+
+    <div class="job-detail-description">{{ job.description }}</div>
+
+    <div class="apply-form">
+      <h3>Apply</h3>
+      <form method="post" enctype="multipart/form-data" action="{% url 'apply_to_job' job.pk %}">{% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Apply</button>
+      </form>
+    </div>
+
+    <h3 class="apps-header">Applications</h3>
+    <ul>
+      {% for app in job.applications.all %}
+        <li class="job-card">
+          <div>
+            {{ app.applicant.get_username }}
+            <span class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status }}</span>
+          </div>
+          <div>
+            {% if app.resume %}(<a class="resume-link" href="{{ app.resume.url }}">view resume</a>){% endif %}
+            {% if user == job.created_by and app.status != 'hired' %}
+              <a class="btn-primary-job" href="{% url 'hire_applicant' app.pk %}">Hire</a>
+            {% endif %}
+          </div>
+        </li>
+      {% empty %}
+        <li class="empty-state">No applications yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

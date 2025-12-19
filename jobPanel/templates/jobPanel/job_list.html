@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" href="{% static 'css/applicant_dashboard.css' %}">
+{% endblock %}
+{% block content %}
+  <div class="job-list-container">
+    <h2>Jobs</h2>
+    <div style="margin-bottom:12px;"><a class="btn-primary-job" href="{% url 'create_job' %}">Create Job</a></div>
+    <ul>
+      {% for job in jobs %}
+        <li class="job-card">
+          <div>
+            <div class="job-title"><a href="{% url 'job_detail' job.pk %}">{{ job.title }}</a></div>
+            <div class="job-company">{{ job.company }}</div>
+          </div>
+          <div class="job-actions">
+            <a class="btn-primary-job" href="{% url 'job_detail' job.pk %}">View</a>
+          </div>
+        </li>
+      {% empty %}
+        <li class="empty-state">No jobs available.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

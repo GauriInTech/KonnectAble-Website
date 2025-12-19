@@ -6,6 +6,7 @@ from django.http import HttpResponse  # type: ignore
 from django.http import JsonResponse
 from posts.models import Post
 from profiles.models import Profile
+from jobPanel.models import Application, Job
 from django.urls import reverse
 import urllib.parse
 
@@ -41,7 +42,32 @@ def user_dashboard(request):
         else:
             search_results = []
 
-    return render(request, "UserDashboard.html", {"username": request.user.username, "posts": posts, "search_results": search_results, "query": request.GET.get('q', '')})
+        # profile and social stats
+        profile = Profile.objects.filter(user=request.user).first()
+        supporters_count = profile.supporters_count() if profile else 0
+        supporting_count = profile.supports_count() if profile else 0
+        recent_supporting = profile.get_supporting()[:5] if profile else []
+        recent_supporters = profile.get_supporters()[:5] if profile else []
+
+        # job applications and recommended jobs
+        my_applications = Application.objects.filter(applicant=request.user).order_by('-applied_at')[:5]
+        applications_count = Application.objects.filter(applicant=request.user).count()
+        recommended_jobs = Job.objects.exclude(created_by=request.user).order_by('-created_at')[:5]
+
+    return render(request, "UserDashboard.html", {
+        "username": request.user.username,
+        "posts": posts,
+        "search_results": search_results,
+        "query": request.GET.get('q', ''),
+        "profile": profile if request.user.is_authenticated else None,
+        "supporters_count": supporters_count if request.user.is_authenticated else 0,
+        "supporting_count": supporting_count if request.user.is_authenticated else 0,
+        "recent_supporting": recent_supporting if request.user.is_authenticated else [],
+        "recent_supporters": recent_supporters if request.user.is_authenticated else [],
+        "my_applications": my_applications if request.user.is_authenticated else [],
+        "applications_count": applications_count if request.user.is_authenticated else 0,
+        "recommended_jobs": recommended_jobs if request.user.is_authenticated else [],
+    })
 
 
 def user_search_api(request):

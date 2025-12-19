@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inbox</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="{% static 'css/chat.css' %}">
+</head>
+<body class="chat-theme">
+  <div class="inbox-wrap">
+    <h2>Your Conversations</h2>
+    <div class="card">
+    {% if conversation_items %}
+      <div style="display:flex;flex-direction:column;gap:8px">
+      {% for item in conversation_items %}
+        <a class="conv" href="{% if item.other %}{% url 'message:chat_with_user' item.other.pk %}{% else %}#{% endif %}">
+          <div class="avatar">
+            {% if item.other and item.other.profile and item.other.profile.profile_image %}
+              <img src="{{ item.other.profile.profile_image.url }}" alt="{{ item.other.username }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">
+            {% else %}
+              {% if item.other %}{{ item.other.username|first|upper }}{% else %}G{% endif %}
+            {% endif %}
+          </div>
+          <div class="meta">
+            <div style="display:flex;flex-direction:column">
+              <div class="name">{% if item.other %}{{ item.other.get_full_name|default:item.other.username }}{% else %}Group conversation{% endif %}</div>
+              <div style="font-size:13px;color:#6b7280">{% if item.other %}@{{ item.other.username }}{% else %}{{ item.conversation.participants.count }} participants{% endif %}</div>
+            </div>
+            <div style="font-size:13px;color:#6b7280">Open →</div>
+          </div>
+        </a>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-conv">No conversations yet. Visit profiles to start a chat.</div>
+    {% endif %}
+    </div>
+  </div>
+</body>
+</html>

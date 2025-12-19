@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" href="{% static 'css/applicant_dashboard.css' %}">
+{% endblock %}
+{% block content %}
+  <div class="dashboard-container">
+    <h2>Your Posted Jobs</h2>
+    <a class="apply-link" href="{% url 'create_job' %}">Create Job</a>
+    <h3 class="jobs-header">Jobs</h3>
+    <ul>
+      {% for job in jobs %}
+        <li>
+          <div>
+            <strong>{{ job.title }}</strong>
+            <div style="color:#6b7280; font-size:13px">{{ job.company }}</div>
+          </div>
+          <div>
+            <a class="apply-link" href="{% url 'job_detail' job.pk %}">View</a>
+          </div>
+
+          <div style="width:100%; margin-top:10px;">
+            <ul>
+              {% for app in job.applications.all %}
+                <li>
+                  <div>
+                    {{ app.applicant.username }}
+                    <span class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status }}</span>
+                  </div>
+                  <div>
+                    {% if app.resume %}<a class="resume-link" href="{{ app.resume.url }}">resume</a>{% endif %}
+                  </div>
+                </li>
+              {% empty %}
+                <li class="empty-state">No applications yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </li>
+      {% empty %}
+        <li class="empty-state">You haven't posted any jobs yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

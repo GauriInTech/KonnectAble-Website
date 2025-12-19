@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" href="{% static 'css/applicant_dashboard.css' %}">
+{% endblock %}
+{% block content %}
+  <h2>Applicant Dashboard</h2>
+  <div class="dashboard-container">
+  <p class="welcome-msg">Welcome {{ request.user.username }} — here are available jobs and your applications.</p>
+
+  <h3>Available Jobs</h3>
+  <ul>
+    {% for job in jobs %}
+      <li>
+        <strong><a href="{% url 'job_detail' job.pk %}">{{ job.title }}</a></strong> — {{ job.company }}
+        {% if job.pk in applied_job_ids %}
+          <em> (Applied)</em>
+        {% else %}
+          <a href="{% url 'job_detail' job.pk %}">View & Apply</a>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li>No jobs available.</li>
+    {% endfor %}
+  </ul>
+
+  <h3 class="apps-header">Your Applications</h3>
+  <ul>
+    {% for app in applications %}
+      <li>
+        <div>
+          <strong>{{ app.job.title }}</strong>
+          <div class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status }}</div>
+        </div>
+        <div>
+          {% if app.resume %}<a class="resume-link" href="{{ app.resume.url }}">resume</a>{% endif %}
+        </div>
+      </li>
+    {% empty %}
+      <li class="empty-state">You haven't applied to any jobs yet.</li>
+    {% endfor %}
+  </ul>
+  </div>
+{% endblock %}

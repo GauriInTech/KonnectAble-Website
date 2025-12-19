@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+
+<div class="profile-list-page" style="padding:1rem">
+  <h2 style="margin-bottom:12px">Supporters of {{ profile.user.username }}</h2>
+  <div class="profiles-container">
+    {% for p in supporters %}
+      <div class="profile-card small">
+        <div class="profile-top">
+          <div class="profile-avatar">
+            {% if p.profile_image %}
+              <img src="{{ p.profile_image.url }}" alt="{{ p.user.username }}" style="width:56px;height:56px;border-radius:12px;object-fit:cover" />
+            {% else %}
+              {{ p.user.username|slice:"0:2"|upper }}
+            {% endif %}
+          </div>
+          <div class="profile-meta">
+            <p class="profile-username small"><a class="profile-link" href="{% url 'profile_detail' p.user.username %}">{{ p.user.username }}</a></p>
+            <div class="profile-stats">Supports: <strong>{{ p.supports_count|default:p.connections.count }}</strong> • Supporters: <strong>{{ p.supporters_count|default:p.connected_to.count }}</strong></div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p>No supporters yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

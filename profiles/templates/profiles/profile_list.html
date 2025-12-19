@@ -1,15 +1,44 @@
-{%extends "base.html" %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<h1>All Profiles</h1>
 
-<ul>
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+  
+<div class="profiles-container" role="list" aria-label="User profiles">
   {% for profile in profiles %}
-    <li>
-      <a href="{% url 'profile_detail' profile.user.username %}">
-        {{ profile.user.username }}
-      </a>
-    </li>
+    <div class="profile-card" role="listitem">
+      <div class="profile-top">
+        <div class="profile-avatar">
+          {% if profile.profile_image %}
+            <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" style="width:56px;height:56px;border-radius:12px;object-fit:cover" />
+          {% else %}
+            {{ profile.user.username|slice:"0:2"|upper }}
+          {% endif %}
+        </div>
+        <div class="profile-meta">
+          <p class="profile-username"><a class="profile-link" href="{% url 'profile_detail' profile.user.username %}">{{ profile.user.username }}</a></p>
+          <div class="profile-stats">Supporting:<strong>{{ profile.supports_count }}</strong> • Supporters: <strong>{{ profile.supporters_count }}</strong></div>
+        </div>
+      </div>
+
+      {# Preview lists removed: full lists are available via the Supporters/Following pages #}
+
+      <div class="profile-actions">
+        {% if request.user.is_authenticated and request.user.username != profile.user.username %}
+          <form method="post" action="{% url 'toggle_support' profile.user.username %}" style="display:inline" aria-label="Support {{ profile.user.username }}">
+            {% csrf_token %}
+            {% if profile.is_supported_by_me %}
+              <button type="submit" class="btn btn-primary" aria-pressed="true" aria-label="Un-support {{ profile.user.username }}">Un-support<span class="sr-only"> {{ profile.user.username }}</span></button>
+            {% else %}
+              <button type="submit" class="btn btn-primary" aria-pressed="false" aria-label="Support {{ profile.user.username }}">Support<span class="sr-only"> {{ profile.user.username }}</span></button>
+            {% endif %}
+          </form>
+        {% else %}
+          <a href="{% url 'profile_detail' profile.user.username %}" class="btn btn-ghost" aria-label="View profile of {{ profile.user.username }}">View</a>
+        {% endif %}
+      </div>
+    </div>
   {% endfor %}
-</ul>
+</div>
 {% endblock %}

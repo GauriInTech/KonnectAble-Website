@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     'accounts',
     'profiles.apps.ProfilesConfig',
     'posts',
-    
+    'jobPanel.apps.JobpanelConfig',
+    'message',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +67,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.media',
                 'django.contrib.messages.context_processors.messages',
             ],
         },
@@ -72,6 +75,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'KonnectAble.wsgi.application'
+ASGI_APPLICATION = 'KonnectAble.asgi.application'
 
 
 # Database
@@ -124,6 +128,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Include the project-level static folder so templates can load /static/css/* files
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 # Media files (User uploaded files)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Channels channel layer (in-memory for development). For production use Redis.
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
