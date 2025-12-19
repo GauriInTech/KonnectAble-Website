@@ -1,12 +1,6 @@
-
-{% load static %}
-{% block head %}
-<link rel="stylesheet" href="{% static 'css/posts.css' %}">
-{% endblock %}
-{% block content %}
-<div class="container">
-    <!-- CREATE POST FORM -->
-    <div class="create-post">
+{% comment %}Reusable posts feed (create-post + posts list). Included by posts page and user dashboard.{% endcomment %}
+<!-- CREATE POST FORM -->
+<div class="create-post">
         <div class="create-post-header">
             <div class="avatar-circle">
                 {{ request.user.username|first|upper }}
@@ -43,7 +37,7 @@
 
             <div class="post-actions">
                 <!-- LIKE -->
-                <form method="post" action="/posts/like/{{ post.id }}/">
+                <form method="post" action="{% url 'like_post' post.id %}">
                     {% csrf_token %}
                     <button
                         type="button"
@@ -60,9 +54,9 @@
                     💬 Comment
                 </a>
 
-                <!-- ✅ DELETE BUTTON -->
+                <!-- DELETE BUTTON -->
                 {% if post.user == request.user %}
-                    <form method="post" action="/posts/delete/{{ post.id }}/" style="display:inline;">
+                    <form method="post" action="{% url 'delete_post' post.id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit"
                                 class="action-btn"
@@ -76,7 +70,7 @@
 
             <!-- COMMENT FORM -->
             <div id="comment-form-{{ post.id }}" class="comment-form">
-                <form method="post" action="/posts/comment/{{ post.id }}/">
+                <form method="post" action="{% url 'add_comment' post.id %}">
                     {% csrf_token %}
                     <textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%;"></textarea>
                     <button type="submit" class="main-btn" style="margin-top:8px;">Comment</button>
@@ -95,30 +89,3 @@
     {% empty %}
         <p style="text-align:center; color:#666;">No posts yet. Create the first one!</p>
     {% endfor %}
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    document.querySelectorAll('.like-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            const postId = this.dataset.postId;
-
-            fetch(`/posts/like/${postId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrftoken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                this.textContent = `👍 Like (${data.likes_count})`;
-            })
-            .catch(err => console.error(err));
-        });
-    });
-});
-</script>
-{% endblock %}
