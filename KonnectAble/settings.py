@@ -11,9 +11,28 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load simple .env file (KEY=VALUE) if present in project root. Values do not override existing environment variables.
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    try:
+        for raw_line in env_path.read_text().splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '=' not in line:
+                continue
+            key, val = line.split('=', 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            os.environ.setdefault(key, val)
+    except Exception:
+        # Fail safe: don't crash settings if .env is malformed
+        pass
 
 
 # Quick-start development settings - unsuitable for production
@@ -143,3 +162,10 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer'
     }
 }
+
+# Toggle to enable Claude Haiku 4.5 across the application.
+# Set the environment variable `ENABLE_CLAUDE_HAIKU_4_5=true` to enable.
+ENABLE_CLAUDE_HAIKU_4_5 = os.getenv('ENABLE_CLAUDE_HAIKU_4_5', 'false').lower() in ('1', 'true', 'yes')
+
+# Placeholder for Anthropic API key (set in environment for production use).
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
