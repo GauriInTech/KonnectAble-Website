@@ -5,17 +5,20 @@
 {% endblock %}
 {% block content %}
   <div class="dashboard-container">
-    <h2>Your Posted Jobs</h2>
-    <a class="apply-link" href="{% url 'create_job' %}">Create Job</a>
-    <h3 class="jobs-header">Jobs</h3>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2>Your Posted Jobs</h2>
+      <a class="apply-link" href="{% url 'create_job' %}">Create Job</a>
+    </div>
+
+    <h3>Jobs</h3>
     <ul>
       {% for job in jobs %}
         <li>
           <div>
-            <strong>{{ job.title }}</strong>
-            <div style="color:#6b7280; font-size:13px">{{ job.company }}</div>
+            <div class="job-title">{{ job.title }}</div>
+            <div class="job-company">{{ job.company }}</div>
           </div>
-          <div>
+          <div class="job-actions">
             <a class="apply-link" href="{% url 'job_detail' job.pk %}">View</a>
           </div>
 
@@ -25,10 +28,10 @@
                 <li>
                   <div>
                     {{ app.applicant.username }}
-                    <span class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status }}</span>
+                    <span class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status|capfirst }}</span>
                   </div>
                   <div>
-                    {% if app.resume %}<a class="resume-link" href="{{ app.resume.url }}">resume</a>{% endif %}
+                    {% if app.resume %}<a class="resume-link" href="{{ app.resume.url }}">View resume</a>{% endif %}
                   </div>
                 </li>
               {% empty %}
