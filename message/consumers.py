@@ -63,16 +63,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         }
 
         await self.channel_layer.group_send(self.group_name, payload)
-        logger.debug("ChatConsumer: broadcast message %s in %s", msg.pk, self.group_name)
+        logger.debug("ChatConsumer: broadcast message %s in %s", msg_data.get('id'), self.group_name)
 
     async def chat_message(self, event):
         # send the message to WebSocket
         await self.send_json({
-            'message': event['message'],
-            'sender_id': event['sender_id'],
-            'message_id': event['message_id'],
-            'created_at': event['created_at'],
-            'conversation_id': event['conversation_id'],
+            'message': event.get('message'),
+            'sender_id': event.get('sender_id'),
+            'message_id': event.get('message_id'),
+            'created_at': event.get('created_at'),
+            'conversation_id': event.get('conversation_id'),
+            'sender_username': event.get('sender_username', ''),
+            'sender_avatar': event.get('sender_avatar', ''),
         })
 
     def get_conversation(self):

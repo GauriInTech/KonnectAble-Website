@@ -47,3 +47,21 @@ body.chat-theme{
 .conv .name{ font-weight:700; color:var(--accent-1) }
 .no-conv{ color:#6b7280; padding:18px; }
 @media(max-width:700px){ .inbox-wrap{ padding:8px } .conv{ flex-direction:column; align-items:flex-start } }
+
+/* Create group panel styles */
+.create-group-card{ padding:18px; margin-bottom:18px; border-radius:12px; }
+.create-group-card h3{ margin:0 0 10px 0; color:var(--accent-1); font-size:18px }
+.user-search{ display:flex; gap:10px; align-items:center; margin-bottom:12px }
+.user-search label{ font-weight:600; color:#374151 }
+.user-search input[type="search"]{ flex:1; padding:8px 10px; border-radius:8px; border:1px solid #e6e6f0; background:#fff }
+.user-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:220px; overflow:auto; padding:6px 0 }
+.user-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #f3eefb; border-radius:8px; background:linear-gradient(180deg,#fff,#fbf8ff); transition:all .14s ease }
+.user-item:hover{ transform:translateY(-3px); box-shadow:0 8px 24px rgba(103,80,164,0.06); border-color: rgba(167,139,250,0.12) }
+.user-item input[type="checkbox"]{ margin-right:8px; width:16px; height:16px }
+
+/* Primary button consistent with site */
+.btn{ background: linear-gradient(135deg,var(--accent-1),var(--accent-2)); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:700 }
+.btn:hover{ filter:brightness(.98); transform:translateY(-1px) }
+
+/* small helper */
+.muted-note{ color:#6b7280; font-size:13px }

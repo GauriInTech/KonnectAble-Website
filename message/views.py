@@ -59,7 +59,10 @@ def inbox(request):
         other_user = others.first() if others.count() == 1 else None
         items.append({'conversation': c, 'other': other_user})
 
-    return render(request, 'message/inbox.html', {'conversation_items': items})
+    # provide a short list of other users to allow creating groups from the UI
+    users = User.objects.exclude(pk=request.user.pk).order_by('username')[:100]
+
+    return render(request, 'message/inbox.html', {'conversation_items': items, 'users': users})
 
 
 @login_required
@@ -86,4 +89,58 @@ def send_message(request, conversation_id):
     return JsonResponse({'message': data})
 from django.shortcuts import render
 
+
+@login_required
+def chat_conversation(request, conversation_id):
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    if not conv.participants.filter(pk=request.user.pk).exists():
+        return HttpResponseForbidden()
+
+    others = conv.participants.exclude(pk=request.user.pk)
+    other_user = others.first() if others.count() == 1 else None
+    participants = conv.participants.all()
+
+    return render(request, 'message/chat.html', {
+        'conversation_id': conv.pk,
+        'other_user': other_user,
+        'participants': participants,
+        'conversation': conv,
+    })
+
+
+@login_required
+def create_group(request):
+    # Accepts POST with `user_ids` (comma-separated or multiple form fields) and creates a Conversation
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    # collect user ids
+    user_ids = request.POST.getlist('user_ids') or request.POST.get('user_ids', '')
+    if isinstance(user_ids, str):
+        user_ids = [s.strip() for s in user_ids.split(',') if s.strip()]
+
+    users = User.objects.filter(pk__in=user_ids)
+    conv = Conversation.objects.create()
+    # add creator + provided users
+    conv.participants.add(request.user, *list(users))
+
+    return redirect('message:chat_conversation', conversation_id=conv.pk)
+
 # Create your views here.
+
+
+@login_required
+def leave_conversation(request, conversation_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    if not conv.participants.filter(pk=request.user.pk).exists():
+        return HttpResponseForbidden()
+
+    conv.participants.remove(request.user)
+    # if conversation empty, delete it
+    if conv.participants.count() == 0:
+        conv.delete()
+
+    return redirect('message:inbox')

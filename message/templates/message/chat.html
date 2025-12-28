@@ -13,7 +13,16 @@
       <div class="chat-header">
         <div style="display:flex;gap:12px;align-items:center">
           <a href="/messages/inbox/" class="back-link">← Inbox</a>
-          <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
+          {% if other_user %}
+            <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
+          {% else %}
+            <div class="title">Group: {% for p in participants %}{% if not p.pk == request.user.pk %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}</div>
+          {% endif %}
+
+          <form id="leave-form" method="post" action="{% url 'message:leave_conversation' conversation_id=conversation_id %}" style="margin-left:auto">
+            {% csrf_token %}
+            <button type="submit" class="btn" onclick="return confirm('Leave this conversation?')">Leave</button>
+          </form>
         </div>
       </div>
 
@@ -91,7 +100,7 @@
 
   socket.onmessage = function(e){
     const data = JSON.parse(e.data);
-    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at });
+    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at, sender_username: data.sender_username, sender_avatar: data.sender_avatar });
   }
 
   function getCookie(name) {
