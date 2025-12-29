@@ -1,5 +1,4 @@
 import logging
-
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
@@ -7,7 +6,6 @@ from .models import Conversation, Message
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
-
 
 User = get_user_model()
 
@@ -19,24 +17,25 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         user = self.scope.get('user')
         if user is None or not user.is_authenticated:
-            logger.debug("ChatConsumer: unauthenticated connect attempt")
             await self.close()
             return
 
-        # verify conversation and membership
         conversation = await database_sync_to_async(self.get_conversation)()
         if conversation is None:
-            logger.debug("ChatConsumer: user not participant of conversation %s", self.conversation_id)
             await self.close()
             return
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
-        logger.debug("ChatConsumer: user %s connected to %s", user.pk, self.group_name)
+
+        # Update undelivered messages to delivered
+        await database_sync_to_async(self.update_undelivered_messages)()
+
+        # Update all messages to seen for this user
+        await database_sync_to_async(self.update_seen_messages)()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        logger.debug("ChatConsumer: disconnected %s (%s)", self.channel_name, close_code)
 
     async def receive_json(self, content, **kwargs):
         text = content.get('message')
@@ -44,12 +43,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         user = self.scope['user']
-        # persist message
-        try:
-            msg_data = await database_sync_to_async(self.create_message)(user, text)
-        except Exception:
-            logger.exception("ChatConsumer: failed to create message")
-            return
+        msg_data = await database_sync_to_async(self.create_message)(user, text)
 
         payload = {
             'type': 'chat.message',
@@ -60,13 +54,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             'message_id': msg_data['id'],
             'created_at': msg_data['created_at'],
             'conversation_id': self.conversation_id,
+            'status': msg_data['status'],
         }
 
         await self.channel_layer.group_send(self.group_name, payload)
-        logger.debug("ChatConsumer: broadcast message %s in %s", msg_data.get('id'), self.group_name)
 
     async def chat_message(self, event):
-        # send the message to WebSocket
         await self.send_json({
             'message': event.get('message'),
             'sender_id': event.get('sender_id'),
@@ -75,6 +68,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             'conversation_id': event.get('conversation_id'),
             'sender_username': event.get('sender_username', ''),
             'sender_avatar': event.get('sender_avatar', ''),
+            'status': event.get('status', 'sent'),
         })
 
     def get_conversation(self):
@@ -90,7 +84,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     def create_message(self, user, text):
         conv = Conversation.objects.get(pk=self.conversation_id)
         msg = Message.objects.create(conversation=conv, sender=user, content=text, created_at=timezone.now())
-        # compute sender avatar URL safely
+
         avatar_url = ''
         try:
             profile = getattr(user, 'profile', None)
@@ -99,11 +93,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         except Exception:
             avatar_url = ''
 
-        sender_name = ''
-        try:
-            sender_name = user.get_full_name() or user.username
-        except Exception:
-            sender_name = getattr(user, 'username', '')
+        sender_name = user.get_full_name() or user.username
 
         return {
             'id': msg.pk,
@@ -112,4 +102,23 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             'sender_id': msg.sender_id,
             'sender_avatar': avatar_url,
             'sender_username': sender_name,
+            'status': msg.status
         }
+
+    def update_undelivered_messages(self):
+        """Mark all messages not sent by this user as delivered if they are still 'sent'"""
+        user = self.scope.get('user')
+        conv = Conversation.objects.get(pk=self.conversation_id)
+        undelivered = conv.messages.exclude(sender=user).filter(status='sent')
+        for msg in undelivered:
+            msg.status = 'delivered'
+            msg.save()
+
+    def update_seen_messages(self):
+        """Mark all messages not sent by this user as seen"""
+        user = self.scope.get('user')
+        conv = Conversation.objects.get(pk=self.conversation_id)
+        unseen = conv.messages.exclude(sender=user).filter(status__in=['sent', 'delivered'])
+        for msg in unseen:
+            msg.status = 'seen'
+            msg.save()

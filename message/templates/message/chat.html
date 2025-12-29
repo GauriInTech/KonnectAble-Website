@@ -16,7 +16,14 @@
           {% if other_user %}
             <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
           {% else %}
-            <div class="title">Group: {% for p in participants %}{% if not p.pk == request.user.pk %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}</div>
+            <div class="title">
+              Group:
+              {% for p in participants %}
+                {% if not p.pk == request.user.pk %}
+                  {{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
           {% endif %}
 
           <form id="leave-form" method="post" action="{% url 'message:leave_conversation' conversation_id=conversation_id %}" style="margin-left:auto">
@@ -41,10 +48,14 @@
   const conversationId = '{{ conversation_id }}';
   const userId = '{{ request.user.pk }}';
 
-  function addMessage(obj){
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chat-line';
+  function getTickIcon(status) {
+    if (status === "sent") return " ✔";
+    if (status === "delivered") return " ✔✔";
+    if (status === "seen") return " <span style='color:#1da1f2;'>✔✔</span>";
+    return "";
+  }
 
+  function addMessage(obj){
     const isMe = (obj.sender_id == userId);
 
     const avatar = document.createElement('div');
@@ -52,9 +63,9 @@
     if (obj.sender_avatar) {
       const img = document.createElement('img');
       img.src = obj.sender_avatar;
-      img.alt = obj.sender_username || 'avatar';
-      img.style.width = '40px'; img.style.height = '40px'; img.style.borderRadius = '50%';
-      avatar.innerHTML = '';
+      img.style.width = '40px';
+      img.style.height = '40px';
+      img.style.borderRadius = '50%';
       avatar.appendChild(img);
     } else {
       avatar.textContent = (obj.sender_username || '?').charAt(0).toUpperCase();
@@ -62,12 +73,23 @@
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
-    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()}</div>`;
+
+    const ticks = isMe ? getTickIcon(obj.status) : "";
+
+    bubble.innerHTML = `
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;">
+        ${obj.sender_username || ''}
+      </div>
+      <div>${obj.content}</div>
+      <div class="msg-meta">
+        ${new Date(obj.created_at).toLocaleTimeString()}${ticks}
+      </div>
+    `;
 
     const line = document.createElement('div');
     line.style.display = 'flex';
-    line.style.alignItems = 'flex-start';
     line.style.gap = '10px';
+
     if (isMe) {
       line.style.justifyContent = 'flex-end';
       line.appendChild(bubble);
@@ -78,30 +100,43 @@
     }
 
     document.getElementById('messages').appendChild(line);
-    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    document.getElementById('messages').scrollTop =
+      document.getElementById('messages').scrollHeight;
   }
 
-  // fetch existing messages
-  fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
-    data.messages.forEach(addMessage);
-  });
+  // fetch old messages
+  fetch(`/messages/api/conversation/${conversationId}/messages/`)
+    .then(r => r.json())
+    .then(data => {
+      data.messages.forEach(addMessage);
+    });
 
   const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
   const socket = new WebSocket(wsUrl);
 
-  socket.addEventListener('open', function() {
-    console.log('WebSocket open', wsUrl);
-  });
-
-  socket.addEventListener('error', function(err){
-    console.error('WebSocket error', err);
-  });
-
   socket.onmessage = function(e){
     const data = JSON.parse(e.data);
-    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at, sender_username: data.sender_username, sender_avatar: data.sender_avatar });
-  }
+
+    addMessage({
+      sender_id: data.sender_id,
+      content: data.message,
+      created_at: data.created_at,
+      sender_username: data.sender_username,
+      sender_avatar: data.sender_avatar,
+      status: data.status
+    });
+
+    // ✅ Update blue ticks for all your messages in real-time
+    if (data.status === 'seen' && data.sender_id !== userId) {
+      const bubbles = document.querySelectorAll('.bubble.me .msg-meta');
+      bubbles.forEach(b => {
+        if (!b.innerHTML.includes('✔✔')) {
+          b.innerHTML = b.innerHTML.replace('✔', "<span style='color:#1da1f2;'>✔✔</span>");
+        }
+      });
+    }
+  };
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -113,30 +148,32 @@
     ev.preventDefault();
     const input = document.getElementById('msg-input');
     const text = input.value.trim();
-    if(!text) return;
+    if (!text) return;
 
-    // prefer websocket when open
-    if (socket && socket.readyState === 1) {
+    if (socket.readyState === 1) {
       socket.send(JSON.stringify({ message: text }));
       input.value = '';
       return;
     }
 
-    // fallback to HTTP POST
     const csrftoken = getCookie('csrftoken');
     fetch(`/messages/api/conversation/${conversationId}/send/`, {
       method: 'POST',
-      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-CSRFToken': csrftoken || ''
       },
       body: `message=${encodeURIComponent(text)}`
-    }).then(r=>r.json()).then(data=>{
+    }).then(r => r.json()).then(data => {
       if (data.message) {
-        addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at });
+        addMessage({
+          sender_id: data.message.sender_id,
+          content: data.message.content,
+          created_at: data.message.created_at,
+          status: "sent"
+        });
       }
-    }).catch(err=>console.error('Send fallback failed', err));
+    });
 
     input.value = '';
   });

@@ -33,6 +33,21 @@ def conversation_messages(request, conversation_id):
     if not conv.participants.filter(pk=request.user.pk).exists():
         return HttpResponseForbidden()
 
+    # ✅ STEP 3: mark SENT → DELIVERED
+    Message.objects.filter(
+        conversation=conv,
+        status='sent'
+    ).exclude(sender=request.user).update(status='delivered')
+
+    # ✅ STEP 4: mark DELIVERED → SEEN
+    Message.objects.filter(
+        conversation=conv,
+        status='delivered'
+    ).exclude(sender=request.user).update(
+        status='seen',
+        is_read=True
+    )
+
     msgs = conv.messages.all().order_by('created_at')[:200]
     data = [
         {
@@ -42,11 +57,17 @@ def conversation_messages(request, conversation_id):
             'created_at': m.created_at.isoformat(),
             'sender_username': getattr(m.sender, 'username', ''),
             'sender_full_name': getattr(m.sender, 'get_full_name', lambda: '')() if hasattr(m.sender, 'get_full_name') else '',
-            'sender_avatar': (m.sender.profile.profile_image.url if getattr(getattr(m.sender, 'profile', None), 'profile_image', None) else ''),
+            'sender_avatar': (
+                m.sender.profile.profile_image.url
+                if getattr(getattr(m.sender, 'profile', None), 'profile_image', None)
+                else ''
+            ),
+            'status': m.status,  # 👈 important for blue ticks
         }
         for m in msgs
     ]
     return JsonResponse({'messages': data})
+
 
 
 @login_required
