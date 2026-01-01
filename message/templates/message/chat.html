@@ -16,7 +16,7 @@
           {% if other_user %}
             <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
           {% else %}
-            <div class="title">Group: {% for p in participants %}{% if not p.pk == request.user.pk %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}</div>
+            <div class="title">{% if conversation.name %}{{ conversation.name }}{% else %}Group{% endif %} Created by {% if conversation.created_by %}{{ conversation.created_by.get_full_name|default:conversation.created_by.username }}{% else %}Unknown{% endif %}</div>
           {% endif %}
 
           <form id="leave-form" method="post" action="{% url 'message:leave_conversation' conversation_id=conversation_id %}" style="margin-left:auto">
@@ -26,11 +26,79 @@
         </div>
       </div>
 
+      {% if not other_user %}
+      {% if is_admin %}
+      <div class="group-admin-panel" style="padding:12px;border-bottom:1px solid #f3eefb;background:#fafafa;">
+        <h4 style="margin:0 0 8px 0;font-size:14px;color:#374151;">Group Management</h4>
+
+        <div style="margin-bottom:12px;">
+          <strong style="font-size:13px;color:#374151;">Group Name:</strong>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+            <input id="group-name-input" type="text" value="{% if conversation.name %}{{ conversation.name }}{% else %}Group{% endif %}" style="flex:1;padding:6px 10px;border:1px solid #e6e6f0;border-radius:6px;font-size:14px;">
+            <button id="update-name-btn" class="btn" style="padding:6px 12px;font-size:14px;">Update Name</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <strong style="font-size:13px;color:#374151;">Admins:</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+            {% if conversation.created_by %}
+            <div class="admin-chip" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#e0f2fe;border:1px solid #0ea5e9;border-radius:12px;font-size:14px;">
+              <span>{{ conversation.created_by.get_full_name|default:conversation.created_by.username }} (Creator)</span>
+            </div>
+            {% endif %}
+            {% for admin in conversation.admins %}
+            {% if admin != conversation.created_by %}
+            <div class="admin-chip" data-user-id="{{ admin.pk }}" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#e0f2fe;border:1px solid #0ea5e9;border-radius:12px;font-size:14px;">
+              <span>{{ admin.get_full_name|default:admin.username }}</span>
+              {% if conversation.created_by == request.user %}
+              <button type="button" data-user-id="{{ admin.pk }}" class="demote-admin-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;">↓</button>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <strong style="font-size:13px;color:#374151;">Members:</strong>
+          <div id="members-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+            {% for p in participants %}
+            <div class="member-chip" data-user-id="{{ p.pk }}" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8fafc;border:1px solid #e6e6f0;border-radius:12px;font-size:14px;">
+              <span>{{ p.get_full_name|default:p.username }}</span>
+              {% if p != request.user %}
+              <button type="button" data-user-id="{{ p.pk }}" class="remove-member-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;">×</button>
+              {% if conversation.created_by == request.user and p not in conversation.admins %}
+              <button type="button" data-user-id="{{ p.pk }}" class="promote-admin-btn" style="background:none;border:none;color:#10b981;cursor:pointer;font-size:16px;">↑</button>
+              {% endif %}
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          <div style="position:relative;flex:1;">
+            <input id="add-user-search" type="text" placeholder="Search users to add..." style="width:100%;padding:6px 10px;border:1px solid #e6e6f0;border-radius:6px;font-size:14px;">
+            <div id="add-user-results" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e6e6f0;border-radius:6px;max-height:150px;overflow:auto;z-index:1000;display:none;"></div>
+          </div>
+          <button id="add-member-btn" class="btn" style="padding:6px 12px;font-size:14px;display:none;">Add Member</button>
+        </div>
+
+        {% if conversation.created_by == request.user %}
+        <div style="text-align:right;">
+          <button id="delete-group-btn" class="btn" style="background:#ef4444;color:#fff;padding:6px 12px;font-size:14px;" onclick="return confirm('Are you sure you want to delete this group? This action cannot be undone.')">Delete Group</button>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endif %}
+
       <div id="messages" class="messages" aria-live="polite"></div>
 
-      <form id="chat-form" class="input-row" action="javascript:;">
+      <form id="chat-form" class="input-row">
         <input id="msg-input" name="message" type="text" autocomplete="off" placeholder="Write a message..." />
-        <button type="submit" class="send-btn">Send</button>
+        <button type="button" id="send-btn" class="send-btn">Send</button>
       </form>
     </div>
   </div>
@@ -38,8 +106,24 @@
 
 {% block scripts %}
 <script>
-  const conversationId = '{{ conversation_id }}';
-  const userId = '{{ request.user.pk }}';
+  const conversationId = "{{ conversation_id }}";
+  const userId = "{{ request.user.pk }}";
+  const totalParticipants = "{{ participants|length }}";
+  const participantIdsJson = "{{ participant_ids|safe }}";
+  const participantIds = JSON.parse(participantIdsJson);
+  let pendingSeenAcks = [];
+
+  function sendSeenAck(messageId) {
+    console.log('Sending seen ack for message', messageId);
+    if (socket && socket.readyState === 1) {
+      socket.send(JSON.stringify({ ack: 'seen', message_id: messageId }));
+    } else {
+      console.log('WebSocket not ready, queuing seen ack');
+      if (!pendingSeenAcks.includes(messageId)) {
+        pendingSeenAcks.push(messageId);
+      }
+    }
+  }
 
   function addMessage(obj){
     const wrapper = document.createElement('div');
@@ -53,7 +137,9 @@
       const img = document.createElement('img');
       img.src = obj.sender_avatar;
       img.alt = obj.sender_username || 'avatar';
-      img.style.width = '40px'; img.style.height = '40px'; img.style.borderRadius = '50%';
+      img.style.width = '40px';
+      img.style.height = '40px';
+      img.style.borderRadius = '50%';
       avatar.innerHTML = '';
       avatar.appendChild(img);
     } else {
@@ -62,7 +148,26 @@
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
-    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()}</div>`;
+    // include tick element for messages sent by current user
+    // determine initial tick state for messages sent by current user
+    let ticksHtml = '';
+    if (isMe) {
+      const deliveredCount = Array.isArray(obj.delivered_to) ? obj.delivered_to.length : 0;
+      const seenCount = Array.isArray(obj.seen_by) ? obj.seen_by.length : 0;
+      const totalRecipients = totalParticipants - 1; // exclude sender
+      let tickText = '✓';
+      let tickColor = '#9ca3af'; // gray for sent
+      if (deliveredCount > 0) {
+        tickText = '✓✓';
+        tickColor = '#111'; // black for delivered
+      }
+      if (seenCount > 0) {
+        tickText = '✓✓';
+        tickColor = '#0055ff'; // brighter blue for seen
+      }
+      ticksHtml = `<span class="msg-ticks" data-message-id="${obj.id || ''}" data-delivered="${deliveredCount}" data-seen="${seenCount}" style="color:${tickColor}">${tickText}</span>`;
+    }
+    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()} ${ticksHtml}</div>`;
 
     const line = document.createElement('div');
     line.style.display = 'flex';
@@ -77,14 +182,37 @@
       line.appendChild(bubble);
     }
 
-    document.getElementById('messages').appendChild(line);
-    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    const messagesEl = document.getElementById('messages');
+    messagesEl.appendChild(line);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  // fetch existing messages
-  fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
-    data.messages.forEach(addMessage);
-  });
+  // track displayed messages to avoid duplicates
+  const displayedMessageIds = new Set();
+  let lastMessageId = null;
+
+  function fetchMessages(isPolling = false){
+    let url = `/messages/api/conversation/${conversationId}/messages/`;
+    if (isPolling && lastMessageId) {
+      url += `?since_id=${lastMessageId}`;
+    }
+    return fetch(url).then(r=>r.json()).then(data=>{
+      const msgs = data.messages || [];
+      msgs.forEach(m=>{
+        if (!displayedMessageIds.has(m.id)){
+          addMessage({ id: m.id, sender_id: m.sender_id, content: m.content, created_at: m.created_at, sender_username: m.sender_username, sender_avatar: m.sender_avatar, delivered_to: m.delivered_to || [], seen_by: m.seen_by || [] });
+          if (m.sender_id != userId) {
+            sendSeenAck(m.id);
+          }
+          displayedMessageIds.add(m.id);
+          lastMessageId = m.id;
+        }
+      });
+    }).catch(err=>console.error('Failed to fetch messages', err));
+  }
+
+  // initial load
+  fetchMessages();
 
   const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
@@ -92,16 +220,79 @@
 
   socket.addEventListener('open', function() {
     console.log('WebSocket open', wsUrl);
+    // Send pending seen acks when WebSocket opens
+    if (pendingSeenAcks.length > 0) {
+      pendingSeenAcks.forEach(mid => {
+        try {
+          socket.send(JSON.stringify({ ack: 'seen', message_id: mid }));
+        } catch (err) {
+          console.error('Failed to send pending seen ack', err);
+        }
+      });
+      pendingSeenAcks = []; // Clear after sending
+    }
   });
 
   socket.addEventListener('error', function(err){
     console.error('WebSocket error', err);
+    // On error, start polling and queue seen acks
+    startPolling();
   });
+
+  // polling fallback when websocket is closed/unavailable
+  let pollInterval = null;
+  function startPolling(){
+    if (pollInterval) return;
+    pollInterval = setInterval(() => fetchMessages(true), 3000);
+    console.log('Started polling for messages');
+  }
+  function stopPolling(){
+    if (!pollInterval) return;
+    clearInterval(pollInterval);
+    pollInterval = null;
+    console.log('Stopped polling for messages');
+  }
 
   socket.onmessage = function(e){
     const data = JSON.parse(e.data);
-    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at, sender_username: data.sender_username, sender_avatar: data.sender_avatar });
+    console.log('WebSocket message received:', data);
+    if (data.event === 'message'){
+      if (!displayedMessageIds.has(data.message_id)){
+        addMessage({ id: data.message_id, sender_id: data.sender_id, content: data.message, created_at: data.created_at, sender_username: data.sender_username, sender_avatar: data.sender_avatar, delivered_to: data.delivered_to || [], seen_by: data.seen_by || [] });
+        displayedMessageIds.add(data.message_id);
+        // sender of this message may be someone else; if it's not me, send a seen ack so sender can get read receipts
+        if (data.sender_id != userId) {
+          // inform server that we've seen the message (very simple: mark seen immediately when delivered to client)
+          try {
+            socket.send(JSON.stringify({ ack: 'seen', message_id: data.message_id }));
+          } catch (err) {
+            console.error('Failed to send seen ack', err);
+          }
+        }
+      }
+    } else if (data.event === 'delivered'){
+      console.log('Delivered event for message', data.message_id);
+      // update tick to double tick for messages that belong to current user
+      const mid = data.message_id;
+      const ticks = document.querySelectorAll(`.msg-ticks[data-message-id="${mid}"]`);
+      ticks.forEach(t => { t.textContent = '✓✓'; t.style.color = '#111'; });
+    } else if (data.event === 'read' || data.event === 'seen'){
+      console.log('Read/seen event for message', data.message_id);
+      const mid = data.message_id;
+      const ticks = document.querySelectorAll(`.msg-ticks[data-message-id="${mid}"]`);
+      ticks.forEach(t => { t.textContent = '✓✓'; t.style.color = '#0055ff'; });
+    }
   }
+
+  socket.addEventListener('close', function(){
+    console.warn('WebSocket closed, starting polling');
+    startPolling();
+  });
+
+  socket.addEventListener('open', function(){
+    // ensure we stop polling once websocket is open
+    stopPolling();
+  });
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -109,21 +300,304 @@
     if (parts.length === 2) return parts.pop().split(';').shift();
   }
 
-  document.getElementById('chat-form').addEventListener('submit', function(ev){
-    ev.preventDefault();
+  // Group admin functions
+  function removeMember(userId) {
+    if (!confirm('Remove this member from the group?')) return;
+
+    const csrftoken = getCookie('csrftoken');
+    fetch(`/messages/api/conversation/${conversationId}/remove_member/`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken || ''
+      },
+      body: `user_id=${userId}`
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        document.querySelector(`.member-chip[data-user-id="${userId}"]`).remove();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to remove member'));
+      }
+    }).catch(err => {
+      console.error('Remove member failed', err);
+      alert('Failed to remove member');
+    });
+  }
+
+  // Add member search
+  const addUserSearch = document.getElementById('add-user-search');
+  const addUserResults = document.getElementById('add-user-results');
+  const addMemberBtn = document.getElementById('add-member-btn');
+  let selectedUserToAdd = null;
+  let addUserTimeout = null;
+
+  if (addUserSearch) {
+    addUserSearch.addEventListener('input', function(){
+      const q = this.value.trim();
+      clearTimeout(addUserTimeout);
+      if (q.length > 0) {
+        addUserTimeout = setTimeout(() => fetchUsersToAdd(q), 300);
+      } else {
+        addUserResults.style.display = 'none';
+      }
+    });
+
+    addUserSearch.addEventListener('focus', function(){
+      if (this.value.trim().length > 0) {
+        fetchUsersToAdd(this.value.trim());
+      }
+    });
+
+    document.addEventListener('click', function(e){
+      if (!addUserSearch.contains(e.target) && !addUserResults.contains(e.target)) {
+        addUserResults.style.display = 'none';
+      }
+    });
+  }
+
+  function fetchUsersToAdd(q) {
+    fetch(`/messages/api/users/search/?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        addUserResults.innerHTML = '';
+        if (data.users.length === 0) {
+          addUserResults.innerHTML = '<div style="padding:8px;color:#6b7280;">No users found</div>';
+        } else {
+          data.users.forEach(user => {
+            const item = document.createElement('div');
+            item.style.padding = '8px 12px';
+            item.style.cursor = 'pointer';
+            item.style.borderBottom = '1px solid #f3f4f6';
+            item.innerHTML = `<strong>${user.full_name || user.username}</strong> <small>@${user.username}</small>`;
+            item.onclick = () => selectUserToAdd(user);
+            addUserResults.appendChild(item);
+          });
+        }
+        addUserResults.style.display = data.users.length > 0 ? 'block' : 'none';
+      })
+      .catch(err => {
+        console.error('Failed to fetch users', err);
+        addUserResults.innerHTML = '<div style="padding:8px;color:#6b7280;">Error loading users</div>';
+        addUserResults.style.display = 'block';
+      });
+  }
+
+  function selectUserToAdd(user) {
+    selectedUserToAdd = user;
+    addUserSearch.value = user.full_name || user.username;
+    addUserResults.style.display = 'none';
+    addMemberBtn.style.display = 'inline-block';
+  }
+
+  if (addMemberBtn) {
+    addMemberBtn.addEventListener('click', function(){
+      if (!selectedUserToAdd) return;
+
+      const csrftoken = getCookie('csrftoken');
+      fetch(`/messages/api/conversation/${conversationId}/add_member/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken || ''
+        },
+        body: `user_id=${selectedUserToAdd.id}`
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          // Add to members list
+          const membersList = document.getElementById('members-list');
+          const chip = document.createElement('div');
+          chip.className = 'member-chip';
+          chip.setAttribute('data-user-id', selectedUserToAdd.id);
+          chip.style.display = 'flex';
+          chip.style.alignItems = 'center';
+          chip.style.gap = '6px';
+          chip.style.padding = '4px 8px';
+          chip.style.background = '#f8fafc';
+          chip.style.border = '1px solid #e6e6f0';
+          chip.style.borderRadius = '12px';
+          chip.style.fontSize = '14px';
+          chip.innerHTML = `
+            <span>${selectedUserToAdd.full_name || selectedUserToAdd.username}</span>
+            <button type="button" data-user-id="${selectedUserToAdd.id}" class="remove-member-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;">×</button>
+          `;
+          membersList.appendChild(chip);
+
+          // Reset
+          addUserSearch.value = '';
+          addMemberBtn.style.display = 'none';
+          selectedUserToAdd = null;
+        } else {
+          alert('Error: ' + (data.error || 'Failed to add member'));
+        }
+      }).catch(err => {
+        console.error('Add member failed', err);
+        alert('Failed to add member');
+      });
+    });
+  }
+
+  // Event delegation for remove member buttons (attach only if element exists)
+  const membersListEl = document.getElementById('members-list');
+  if (membersListEl) {
+    membersListEl.addEventListener('click', function(e){
+      if (e.target.classList.contains('remove-member-btn')) {
+        const userId = e.target.getAttribute('data-user-id');
+        removeMember(userId);
+      }
+      if (e.target.classList.contains('promote-admin-btn')) {
+        const userId = e.target.getAttribute('data-user-id');
+        promoteAdmin(userId);
+      }
+    });
+  }
+
+  // Event delegation for demote admin buttons
+  document.addEventListener('click', function(e){
+    if (e.target.classList.contains('demote-admin-btn')) {
+      const userId = e.target.getAttribute('data-user-id');
+      demoteAdmin(userId);
+    }
+  });
+
+  // Update group name
+  const updateNameBtn = document.getElementById('update-name-btn');
+  if (updateNameBtn) {
+    updateNameBtn.addEventListener('click', function(){
+      const nameInput = document.getElementById('group-name-input');
+      const newName = nameInput.value.trim();
+      if (!newName) {
+        alert('Group name cannot be empty');
+        return;
+      }
+
+      const csrftoken = getCookie('csrftoken');
+      fetch(`/messages/api/conversation/${conversationId}/update_name/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken || ''
+        },
+        body: `name=${encodeURIComponent(newName)}`
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          document.querySelector('.title').textContent = `${newName} (Created by ...)`;
+          alert('Group name updated successfully');
+        } else {
+          alert('Error: ' + (data.error || 'Failed to update group name'));
+        }
+      }).catch(err => {
+        console.error('Update name failed', err);
+        alert('Failed to update group name');
+      });
+    });
+  }
+
+  // Promote admin
+  function promoteAdmin(userId) {
+    if (!confirm('Promote this member to admin?')) return;
+
+    const csrftoken = getCookie('csrftoken');
+    fetch(`/messages/api/conversation/${conversationId}/promote_admin/`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken || ''
+      },
+      body: `user_id=${userId}`
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        location.reload(); // Reload to update UI
+      } else {
+        alert('Error: ' + (data.error || 'Failed to promote admin'));
+      }
+    }).catch(err => {
+      console.error('Promote admin failed', err);
+      alert('Failed to promote admin');
+    });
+  }
+
+  // Demote admin
+  function demoteAdmin(userId) {
+    if (!confirm('Demote this admin?')) return;
+
+    const csrftoken = getCookie('csrftoken');
+    fetch(`/messages/api/conversation/${conversationId}/demote_admin/`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken || ''
+      },
+      body: `user_id=${userId}`
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        location.reload(); // Reload to update UI
+      } else {
+        alert('Error: ' + (data.error || 'Failed to demote admin'));
+      }
+    }).catch(err => {
+      console.error('Demote admin failed', err);
+      alert('Failed to demote admin');
+    });
+  }
+
+  // Delete group
+  const deleteGroupBtn = document.getElementById('delete-group-btn');
+  if (deleteGroupBtn) {
+    deleteGroupBtn.addEventListener('click', function(){
+      const csrftoken = getCookie('csrftoken');
+      fetch(`/messages/api/conversation/${conversationId}/delete/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken || ''
+        },
+        body: ''
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          window.location.href = '/messages/inbox/';
+        } else {
+          alert('Error: ' + (data.error || 'Failed to delete group'));
+        }
+      }).catch(err => {
+        console.error('Delete group failed', err);
+        alert('Failed to delete group');
+      });
+    });
+  }
+
+  document.getElementById('send-btn').addEventListener('click', function(ev){
+    ev.preventDefault(); // Prevent any potential form submission
+    console.log('Send button clicked');
     const input = document.getElementById('msg-input');
+    if (!input) {
+      console.error('Message input not found');
+      return;
+    }
     const text = input.value.trim();
+    console.log('Message text:', text);
     if(!text) return;
+
+    console.log('Conversation ID:', conversationId);
+    console.log('WebSocket readyState:', socket ? socket.readyState : 'No socket');
 
     // prefer websocket when open
     if (socket && socket.readyState === 1) {
+      console.log('Sending via WebSocket');
       socket.send(JSON.stringify({ message: text }));
       input.value = '';
       return;
     }
 
+    console.log('Sending via HTTP fallback');
     // fallback to HTTP POST
     const csrftoken = getCookie('csrftoken');
+    console.log('CSRF token:', csrftoken ? 'Present' : 'Missing');
     fetch(`/messages/api/conversation/${conversationId}/send/`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -132,13 +606,22 @@
         'X-CSRFToken': csrftoken || ''
       },
       body: `message=${encodeURIComponent(text)}`
-    }).then(r=>r.json()).then(data=>{
+    }).then(r=> {
+      console.log('Fetch response status:', r.status);
+      return r.json();
+    }).then(data=>{
+      console.log('Fetch response data:', data);
       if (data.message) {
-        addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at });
+        addMessage({ id: data.message.id, sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at, delivered_to: [], seen_by: [] });
+        // mark message id as displayed so when the server broadcasts it we don't duplicate
+        if (data.message.id) displayedMessageIds.add(data.message.id);
       }
-    }).catch(err=>console.error('Send fallback failed', err));
-
-    input.value = '';
+      input.value = '';
+    }).catch(err=>{
+      console.error('Send fallback failed', err);
+      alert('Failed to send message. Please try again.');
+    });
   });
+  console.log('Send button listener attached');
 </script>
 {% endblock %}

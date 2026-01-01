@@ -12,38 +12,130 @@
   <div class="inbox-wrap">
     <h2>Your Conversations</h2>
     <div class="card create-group-card">
-      <h3>Create Group</h3>
-      <form method="post" action="{% url 'message:create_group' %}">
+      <h3>Start a Conversation</h3>
+      <div class="search-container">
+        <input id="user-search" type="search" placeholder="Search for users..." autocomplete="off">
+        <div id="search-results" class="search-results" style="display:none;"></div>
+        <div id="selected-users" class="selected-users"></div>
+        <button id="start-conversation-btn" class="btn" disabled>Start Conversation</button>
+      </div>
+
+      <form id="conversation-form" method="post" action="{% url 'message:create_group' %}" style="display:none;">
         {% csrf_token %}
-        <div class="user-search">
-          <label>Search users:</label>
-          <input id="user-search" type="search" placeholder="Search users...">
-        </div>
-        <div id="user-list" class="user-list">
-          {% for user in users %}
-            <label class="user-item">
-              <input type="checkbox" name="user_ids" value="{{ user.pk }}"> <span>{{ user.get_full_name|default:user.username }} (@{{ user.username }})</span>
-            </label>
-          {% empty %}
-            <div class="muted-note">No other users available.</div>
-          {% endfor %}
-        </div>
-        <div style="margin-top:10px">
-          <button type="submit" class="btn">Create Group</button>
-        </div>
       </form>
 
       <script>
         (function(){
-          const search = document.getElementById('user-search');
-          const list = Array.from(document.querySelectorAll('#user-list .user-item'));
-          if (!search) return;
-          search.addEventListener('input', function(){
-            const q = this.value.trim().toLowerCase();
-            list.forEach(el=>{
-              const txt = el.textContent.trim().toLowerCase();
-              el.style.display = q === '' || txt.indexOf(q) !== -1 ? 'flex' : 'none';
+          const searchInput = document.getElementById('user-search');
+          const resultsDiv = document.getElementById('search-results');
+          const selectedDiv = document.getElementById('selected-users');
+          const startBtn = document.getElementById('start-conversation-btn');
+          const form = document.getElementById('conversation-form');
+          let selectedUsers = [];
+          let timeout = null;
+
+          function updateStartButton() {
+            const count = selectedUsers.length;
+            startBtn.disabled = count === 0;
+            startBtn.textContent = count === 0 ? 'Start Conversation' : count === 1 ? 'Start Chat' : `Create Group (${count})`;
+          }
+
+          function addSelectedUser(user) {
+            if (selectedUsers.find(u => u.id === user.id)) return;
+            selectedUsers.push(user);
+            updateSelectedUI();
+            updateStartButton();
+            searchInput.value = '';
+            resultsDiv.style.display = 'none';
+          }
+
+          function removeSelectedUser(userId) {
+            selectedUsers = selectedUsers.filter(u => u.id !== userId);
+            updateSelectedUI();
+            updateStartButton();
+          }
+
+          function updateSelectedUI() {
+            selectedDiv.innerHTML = '';
+            selectedUsers.forEach(user => {
+              const chip = document.createElement('div');
+              chip.className = 'user-chip';
+              chip.innerHTML = `
+                <span>${user.full_name || user.username}</span>
+                <button type="button" onclick="removeUser(${user.id})">&times;</button>
+              `;
+              selectedDiv.appendChild(chip);
             });
+          }
+
+          window.removeUser = removeSelectedUser;
+
+          function fetchUsers(q) {
+            fetch(`/messages/api/users/search/?q=${encodeURIComponent(q)}`)
+              .then(r => r.json())
+              .then(data => {
+                resultsDiv.innerHTML = '';
+                if (data.users.length === 0) {
+                  resultsDiv.innerHTML = '<div class="no-results">No users found</div>';
+                } else {
+                  data.users.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `
+                      <div class="user-info">
+                        <strong>${user.full_name || user.username}</strong>
+                        <small>@${user.username}</small>
+                      </div>
+                    `;
+                    item.onclick = () => addSelectedUser(user);
+                    resultsDiv.appendChild(item);
+                  });
+                }
+                resultsDiv.style.display = data.users.length > 0 ? 'block' : 'none';
+              })
+              .catch(err => {
+                console.error('Failed to fetch users', err);
+                resultsDiv.innerHTML = '<div class="no-results">Error loading users</div>';
+                resultsDiv.style.display = 'block';
+              });
+          }
+
+          searchInput.addEventListener('input', function(){
+            const q = this.value.trim();
+            clearTimeout(timeout);
+            if (q.length > 0) {
+              timeout = setTimeout(() => fetchUsers(q), 300);
+            } else {
+              resultsDiv.style.display = 'none';
+            }
+          });
+
+          searchInput.addEventListener('focus', function(){
+            if (this.value.trim().length > 0) {
+              fetchUsers(this.value.trim());
+            }
+          });
+
+          document.addEventListener('click', function(e){
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+              resultsDiv.style.display = 'none';
+            }
+          });
+
+          startBtn.addEventListener('click', function(){
+            if (selectedUsers.length === 0) return;
+
+            // Add hidden inputs to form
+            form.innerHTML = '{% csrf_token %}';
+            selectedUsers.forEach(user => {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'user_ids';
+              input.value = user.id;
+              form.appendChild(input);
+            });
+
+            form.submit();
           });
         })();
       </script>

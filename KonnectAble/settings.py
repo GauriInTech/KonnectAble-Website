@@ -44,12 +44,13 @@ SECRET_KEY = 'django-insecure-j31^f(^x7@$4+0rk6ra*vj2xftw_yj=xsgu$i9csdqx0uf78e&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -63,10 +64,12 @@ INSTALLED_APPS = [
     'jobPanel.apps.JobpanelConfig',
     'message',
     'channels',
+    'notifications',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -169,3 +172,20 @@ ENABLE_CLAUDE_HAIKU_4_5 = os.getenv('ENABLE_CLAUDE_HAIKU_4_5', 'false').lower() 
 
 # Placeholder for Anthropic API key (set in environment for production use).
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'message.consumers': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}

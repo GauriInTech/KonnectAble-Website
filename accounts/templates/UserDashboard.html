@@ -574,6 +574,10 @@
 			transform: translateY(-2px);
 			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 		}
+
+		.unread-notification {
+			font-weight: bold;
+		}
 	</style>
 </head>
 <body>
@@ -741,6 +745,24 @@
         </div>
 
         <div class="card">
+          {% if unread_notifications_count %}({{ unread_notifications_count }} unread){% endif %}
+          {% if recent_notifications %}
+            <ul>
+              {% for notification in recent_notifications %}
+                <li{% if not notification.is_read %} class="unread-notification"{% endif %}>
+                  <strong style="display:block">{{ notification.get_notification_type_display }}</strong>
+                  <small style="color:#6b7280">{{ notification.message|truncatechars:50 }}</small>
+                  <br><small style="color:#9ca3af;">{{ notification.created_at|timesince }} ago</small>
+                </li>
+              {% endfor %}
+            </ul>
+            <div style="margin-top:8px; text-align:right;"><a href="{% url 'notifications:notification_list' %}">View all</a></div>
+          {% else %}
+            <div style="color:#9ca3af;">No notifications yet</div>
+          {% endif %}
+        </div>
+
+        <div class="card">
           <h3>My Applications ({{ applications_count }})</h3>
           {% if my_applications %}
             <ul>
@@ -756,6 +778,8 @@
             <div style="color:#9ca3af;">No recent applications</div>
           {% endif %}
         </div>
+
+        
 
         <div class="card">
           <h3>Recommended Jobs</h3>

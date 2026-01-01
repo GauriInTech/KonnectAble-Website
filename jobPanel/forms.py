@@ -19,9 +19,15 @@ class ApplicantProfileForm(forms.ModelForm):
 
 
 class JobForm(forms.ModelForm):
+    application_deadline = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        required=False
+    )
+
     class Meta:
         model = Job
-        fields = ['title', 'company', 'description']
+        fields = ['title', 'company', 'description', 'location', 'salary_min', 'salary_max',
+                 'experience_required', 'job_type', 'skills_required', 'application_deadline']
 
 
 class ApplicationForm(forms.ModelForm):

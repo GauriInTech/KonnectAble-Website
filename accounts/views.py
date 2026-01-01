@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from posts.models import Post
 from profiles.models import Profile
 from jobPanel.models import Application, Job
+from notifications.models import Notification
 from django.urls import reverse
 import urllib.parse
 
@@ -54,6 +55,10 @@ def user_dashboard(request):
         applications_count = Application.objects.filter(applicant=request.user).count()
         recommended_jobs = Job.objects.exclude(created_by=request.user).order_by('-created_at')[:5]
 
+        # unread notifications count
+        unread_notifications_count = request.user.notifications.filter(is_read=False).count()
+        recent_notifications = request.user.notifications.all()[:5]
+
     return render(request, "UserDashboard.html", {
         "username": request.user.username,
         "posts": posts,
@@ -67,6 +72,8 @@ def user_dashboard(request):
         "my_applications": my_applications if request.user.is_authenticated else [],
         "applications_count": applications_count if request.user.is_authenticated else 0,
         "recommended_jobs": recommended_jobs if request.user.is_authenticated else [],
+        "unread_notifications_count": unread_notifications_count if request.user.is_authenticated else 0,
+        "recent_notifications": recent_notifications if request.user.is_authenticated else [],
     })
 
 

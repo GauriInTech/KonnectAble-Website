@@ -1,57 +1,252 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block head %}
-  <link rel="stylesheet" href="{% static 'css/applicant_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/job_list.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 {% block content %}
-  <div class="dashboard-container">
-    <div class="d-flex justify-content-between align-items-start">
-      <h2>Applicant Dashboard</h2>
-      <div class="text-muted small">Welcome, {{ request.user.username }}</div>
+  <div class="job-list-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h2><i class="fas fa-user-graduate"></i> Applicant Dashboard</h2>
+      <div class="text-muted small">Welcome, {{ request.user.get_full_name|default:request.user.username }}</div>
     </div>
 
-    <p class="welcome-msg">Here are available jobs and your recent applications.</p>
+    <!-- Search and Filters -->
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+      <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+        <div>
+          <label for="search" style="display: block; margin-bottom: 5px; font-weight: 600;">Search Jobs</label>
+          <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Job title, company, skills..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+          <label for="location" style="display: block; margin-bottom: 5px; font-weight: 600;">Location</label>
+          <input type="text" id="location" name="location" value="{{ location_filter }}" placeholder="City, State" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+          <label for="job_type" style="display: block; margin-bottom: 5px; font-weight: 600;">Job Type</label>
+          <select id="job_type" name="job_type" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="">All Types</option>
+            <option value="full_time" {% if job_type_filter == 'full_time' %}selected{% endif %}>Full Time</option>
+            <option value="part_time" {% if job_type_filter == 'part_time' %}selected{% endif %}>Part Time</option>
+            <option value="contract" {% if job_type_filter == 'contract' %}selected{% endif %}>Contract</option>
+            <option value="internship" {% if job_type_filter == 'internship' %}selected{% endif %}>Internship</option>
+          </select>
+        </div>
+        <div>
+          <label for="salary_min" style="display: block; margin-bottom: 5px; font-weight: 600;">Min Salary (₹)</label>
+          <input type="number" id="salary_min" name="salary_min" value="{{ salary_min_filter }}" placeholder="50000" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+          <label for="experience" style="display: block; margin-bottom: 5px; font-weight: 600;">Experience</label>
+          <input type="text" id="experience" name="experience" value="{{ experience_filter }}" placeholder="2-5 years" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn-primary-job" style="padding: 8px 16px;"><i class="fas fa-search"></i> Search</button>
+          <a href="{% url 'applicant_dashboard' %}" class="btn-secondary-job" style="padding: 8px 16px; text-decoration: none;"><i class="fas fa-times"></i> Clear</a>
+        </div>
+      </form>
+    </div>
 
-    <section aria-labelledby="available-jobs">
-      <h3 id="available-jobs">Available Jobs</h3>
-      <ul>
-        {% for job in jobs %}
-          <li>
-            <div>
-              <div class="job-title"><a href="{% url 'job_detail' job.pk %}">{{ job.title }}</a></div>
-              <div class="job-company">{{ job.company }}</div>
-            </div>
-            <div class="job-actions">
-              {% if job.pk in applied_job_ids %}
-                <em>Applied</em>
-              {% else %}
-                <a class="apply-link" href="{% url 'job_detail' job.pk %}">View & Apply</a>
+    <!-- Available Jobs -->
+    <div style="margin-bottom: 40px;">
+      <h3 style="margin-bottom: 20px;"><i class="fas fa-briefcase"></i> Available Jobs ({{ jobs|length }})</h3>
+
+      {% if jobs %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+          {% for job in jobs %}
+            <div class="job-card">
+              <div class="job-header">
+                <div>
+                  <h3 class="job-title">{{ job.title }}</h3>
+                  <div class="job-company">
+                    <i class="fas fa-building"></i> {{ job.company|default:"Company not specified" }}
+                  </div>
+                </div>
+                <div class="job-actions">
+                  {% if job.pk in applied_job_ids %}
+                    <span class="status status-pending" style="font-size: 12px; padding: 4px 8px;">Applied</span>
+                  {% else %}
+                    <a class="btn-primary-job" href="{% url 'job_detail' job.pk %}">
+                      <i class="fas fa-eye"></i> View & Apply
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="job-meta">
+                {% if job.location %}
+                  <div class="job-meta-item">
+                    <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                  </div>
+                {% endif %}
+                {% if job.job_type %}
+                  <div class="job-meta-item">
+                    <i class="fas fa-clock"></i> {{ job.get_job_type_display }}
+                  </div>
+                {% endif %}
+                {% if job.salary_min and job.salary_max %}
+                  <div class="job-meta-item">
+                    <i class="fas fa-rupee-sign"></i> ₹{{ job.salary_min|floatformat:0 }} - ₹{{ job.salary_max|floatformat:0 }}
+                  </div>
+                {% elif job.salary_min %}
+                  <div class="job-meta-item">
+                    <i class="fas fa-rupee-sign"></i> ₹{{ job.salary_min|floatformat:0 }}+
+                  </div>
+                {% endif %}
+                <div class="job-meta-item">
+                  <i class="fas fa-calendar"></i> Posted {{ job.created_at|timesince }} ago
+                </div>
+              </div>
+
+              {% if job.description %}
+                <div class="job-description">{{ job.description|truncatechars:120 }}</div>
+              {% endif %}
+
+              {% if job.skills_required %}
+                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                  <i class="fas fa-tools"></i> <strong>Skills:</strong> {{ job.skills_required|truncatechars:80 }}
+                </div>
               {% endif %}
             </div>
-          </li>
-        {% empty %}
-          <li class="empty-state">No jobs available.</li>
-        {% endfor %}
-      </ul>
-    </section>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="fas fa-search" style="font-size: 48px; color: #dee2e6; margin-bottom: 16px;"></i>
+          <div>No jobs found matching your criteria.</div>
+          <div style="margin-top: 8px;">Try adjusting your search filters.</div>
+          <a class="btn-primary-job" href="{% url 'applicant_dashboard' %}" style="margin-top: 16px;">
+            <i class="fas fa-times"></i> Clear Filters
+          </a>
+        </div>
+      {% endif %}
+    </div>
 
-    <section aria-labelledby="your-applications">
-      <h3 id="your-applications">Your Applications</h3>
-      <ul>
-        {% for app in applications %}
-          <li>
-            <div>
-              <strong>{{ app.job.title }}</strong>
-              <div class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}">{{ app.status|capfirst }}</div>
+    <!-- Your Applications -->
+    <div>
+      <h3 style="margin-bottom: 20px;"><i class="fas fa-clipboard-list"></i> Your Applications ({{ applications|length }})</h3>
+
+      {% if applications %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+          {% for app in applications %}
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div>
+                  <h4 style="margin: 0; font-size: 16px;">{{ app.job.title }}</h4>
+                  <div style="font-size: 12px; color: #6c757d; margin-top: 2px;">
+                    Applied {{ app.applied_at|timesince }} ago
+                  </div>
+                </div>
+                <span class="status {% if app.status == 'applied' %}status-pending{% elif app.status == 'hired' %}status-accepted{% elif app.status == 'rejected' %}status-rejected{% endif %}" style="font-size: 12px; padding: 4px 12px; border-radius: 20px;">
+                  {{ app.status|capfirst }}
+                </span>
+              </div>
+
+              <div style="margin-bottom: 15px;">
+                <div style="font-size: 14px; color: #555;">
+                  <i class="fas fa-building"></i> {{ app.job.company|default:"Company not specified" }}
+                </div>
+                {% if app.job.location %}
+                  <div style="font-size: 14px; color: #555; margin-top: 5px;">
+                    <i class="fas fa-map-marker-alt"></i> {{ app.job.location }}
+                  </div>
+                {% endif %}
+              </div>
+
+              {% if app.cover_letter %}
+                <div style="margin-bottom: 15px;">
+                  <strong style="font-size: 14px;">Cover Letter:</strong>
+                  <div style="margin-top: 5px; font-size: 14px; color: #555;">{{ app.cover_letter|truncatechars:100 }}</div>
+                </div>
+              {% endif %}
+
+              {% if app.status == 'rejected' and app.rejection_reason %}
+                <div style="margin-bottom: 15px; padding: 10px; background: #fee2e2; border-radius: 4px; border-left: 4px solid #dc2626;">
+                  <strong style="font-size: 14px; color: #dc2626;">Rejection Reason:</strong>
+                  <div style="margin-top: 5px; font-size: 14px; color: #dc2626;">{{ app.rejection_reason }}</div>
+                </div>
+              {% endif %}
+
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn-secondary-job" href="{% url 'job_detail' app.job.pk %}" style="font-size: 12px; padding: 6px 12px;">
+                  <i class="fas fa-eye"></i> View Job
+                </a>
+                {% if app.resume %}
+                  <a class="btn-secondary-job" href="{{ app.resume.url }}" target="_blank" style="font-size: 12px; padding: 6px 12px;">
+                    <i class="fas fa-file-pdf"></i> View Resume
+                  </a>
+                {% endif %}
+                {% if app.status == 'applied' %}
+                  <button class="btn-danger-job" onclick="withdrawApplication({{ app.pk }})" style="font-size: 12px; padding: 6px 12px;">
+                    <i class="fas fa-times"></i> Withdraw
+                  </button>
+                {% endif %}
+              </div>
             </div>
-            <div>
-              {% if app.resume %}<a class="resume-link" href="{{ app.resume.url }}">View resume</a>{% endif %}
-            </div>
-          </li>
-        {% empty %}
-          <li class="empty-state">You haven't applied to any jobs yet.</li>
-        {% endfor %}
-      </ul>
-    </section>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="fas fa-clipboard-list" style="font-size: 48px; color: #dee2e6; margin-bottom: 16px;"></i>
+          <div>You haven't applied to any jobs yet.</div>
+          <div style="margin-top: 8px;">Start exploring available opportunities above!</div>
+        </div>
+      {% endif %}
+    </div>
   </div>
+
+  <!-- Withdraw Application Modal -->
+  <div id="withdrawModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <div class="modal-header" style="border-bottom: 1px solid #e9ecef; padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #333;"><i class="fas fa-exclamation-triangle"></i> Withdraw Application</h3>
+        <span class="close" onclick="closeWithdrawModal()" style="float: right; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa;">&times;</span>
+      </div>
+
+      <div class="modal-body">
+        <p style="margin-bottom: 20px; color: #555;">Are you sure you want to withdraw your application? This action cannot be undone.</p>
+
+        <form id="withdrawForm" method="post" action="">
+          {% csrf_token %}
+          <input type="hidden" name="withdraw_application" id="withdrawApplicationId" value="">
+        </form>
+      </div>
+
+      <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding-top: 15px; margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeWithdrawModal()" class="btn-secondary-job" style="padding: 8px 16px;">Cancel</button>
+        <button type="button" onclick="confirmWithdraw()" class="btn-danger-job" style="padding: 8px 16px;">
+          <i class="fas fa-times"></i> Withdraw Application
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentApplicationId = null;
+
+    function withdrawApplication(applicationId) {
+      currentApplicationId = applicationId;
+      document.getElementById('withdrawModal').style.display = 'block';
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('withdrawModal').style.display = 'none';
+      currentApplicationId = null;
+    }
+
+    function confirmWithdraw() {
+      const form = document.getElementById('withdrawForm');
+      form.action = `/job/withdraw/${currentApplicationId}/`;
+      document.getElementById('withdrawApplicationId').value = currentApplicationId;
+      form.submit();
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('withdrawModal');
+      if (event.target == modal) {
+        closeWithdrawModal();
+      }
+    }
+  </script>
 {% endblock %}

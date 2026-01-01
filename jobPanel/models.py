@@ -24,9 +24,24 @@ class ApplicantProfile(models.Model):
 
 
 class Job(models.Model):
+	JOB_TYPE_CHOICES = (
+		('full_time', 'Full Time'),
+		('part_time', 'Part Time'),
+		('contract', 'Contract'),
+		('internship', 'Internship'),
+		('freelance', 'Freelance'),
+	)
+
 	title = models.CharField(max_length=255)
 	description = models.TextField()
 	company = models.CharField(max_length=255, blank=True)
+	location = models.CharField(max_length=255, blank=True)
+	salary_min = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+	salary_max = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+	experience_required = models.CharField(max_length=100, blank=True, help_text="e.g., 2-5 years")
+	job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, default='full_time')
+	skills_required = models.TextField(blank=True, help_text="Comma-separated skills")
+	application_deadline = models.DateField(blank=True, null=True)
 	created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 	created_at = models.DateTimeField(auto_now_add=True)
 
@@ -47,6 +62,7 @@ class Application(models.Model):
 	cover_letter = models.TextField(blank=True)
 	resume = models.FileField(upload_to='applications/resumes/', blank=True, null=True)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+	rejection_reason = models.TextField(blank=True, help_text="Reason for rejection (only filled when status is rejected)")
 	applied_at = models.DateTimeField(auto_now_add=True)
 
 	def __str__(self):

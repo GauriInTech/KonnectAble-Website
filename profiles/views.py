@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from notifications.models import Notification
 
 def profile_list(request):
     my_profile = None
@@ -117,7 +118,16 @@ def toggle_support(request, username):
     actor_profile, _ = Profile.objects.get_or_create(user=request.user)
     target_profile, _ = Profile.objects.get_or_create(user=target_user)
 
-    actor_profile.toggle_support(target_profile)
+    added = actor_profile.toggle_support(target_profile)
+
+    # Create notification if support was added (not removed)
+    if added:
+        Notification.objects.create(
+            recipient=target_user,
+            sender=request.user,
+            notification_type='support',
+            message=f"{request.user.username} started supporting you!"
+        )
 
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('profile_detail', args=[username])))
 

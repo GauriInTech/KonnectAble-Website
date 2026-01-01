@@ -8,12 +8,13 @@ from profiles import views as profile_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
-    path('jobs/', include('jobPanel.urls')),
+    path('job/', include('jobPanel.urls')),
     path('my-profile/', profile_views.my_profile, name='my_profile_root'),
     path('dashboard/', RedirectView.as_view(pattern_name='accounts_home', permanent=False)),
     path('profiles/', include('profiles.urls')),
-    path('posts/', include('posts.urls')),   
+    path('posts/', include('posts.urls')),
     path('messages/', include('message.urls')),
+    path('notifications/', include('notifications.urls')),
 ]
 
 if settings.DEBUG:
