@@ -14,9 +14,26 @@
         <div style="display:flex;gap:12px;align-items:center">
           <a href="/messages/inbox/" class="back-link">← Inbox</a>
           {% if other_user %}
-            <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="title">{{ other_user.get_full_name|default:other_user.username }}</div>
+              <span id="presence-indicator" style="display:inline-flex;align-items:center;gap:6px;margin-left:6px;">
+                <span id="presence-dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block;"></span>
+                <small id="presence-text" style="font-size:13px;color:#6b7280;display:none;margin-left:4px;">Offline</small>
+              </span>
+            </div>
           {% else %}
-            <div class="title">{% if conversation.name %}{{ conversation.name }}{% else %}Group{% endif %} Created by {% if conversation.created_by %}{{ conversation.created_by.get_full_name|default:conversation.created_by.username }}{% else %}Unknown{% endif %}</div>
+            <div class="title">
+              Group:
+              {% for p in participants %}
+                {% if not p.pk == request.user.pk %}
+                  {{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if not other_user and is_admin %}
+            <button id="toggle-group-admin-btn" type="button" class="btn" style="margin-left:8px;">Manage Group</button>
           {% endif %}
 
           <form id="leave-form" method="post" action="{% url 'message:leave_conversation' conversation_id=conversation_id %}" style="margin-left:auto">
@@ -28,7 +45,7 @@
 
       {% if not other_user %}
       {% if is_admin %}
-      <div class="group-admin-panel" style="padding:12px;border-bottom:1px solid #f3eefb;background:#fafafa;">
+      <div id="group-admin-panel" class="group-admin-panel" style="display:none;padding:12px;border-bottom:1px solid #f3eefb;background:#fafafa;">
         <h4 style="margin:0 0 8px 0;font-size:14px;color:#374151;">Group Management</h4>
 
         <div style="margin-bottom:12px;">
@@ -47,7 +64,7 @@
               <span>{{ conversation.created_by.get_full_name|default:conversation.created_by.username }} (Creator)</span>
             </div>
             {% endif %}
-            {% for admin in conversation.admins %}
+            {% for admin in conversation.admins.all %}
             {% if admin != conversation.created_by %}
             <div class="admin-chip" data-user-id="{{ admin.pk }}" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#e0f2fe;border:1px solid #0ea5e9;border-radius:12px;font-size:14px;">
               <span>{{ admin.get_full_name|default:admin.username }}</span>
@@ -68,7 +85,7 @@
               <span>{{ p.get_full_name|default:p.username }}</span>
               {% if p != request.user %}
               <button type="button" data-user-id="{{ p.pk }}" class="remove-member-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;">×</button>
-              {% if conversation.created_by == request.user and p not in conversation.admins %}
+              {% if conversation.created_by == request.user and p not in conversation.admins.all %}
               <button type="button" data-user-id="{{ p.pk }}" class="promote-admin-btn" style="background:none;border:none;color:#10b981;cursor:pointer;font-size:16px;">↑</button>
               {% endif %}
               {% endif %}
@@ -95,6 +112,7 @@
       {% endif %}
 
       <div id="messages" class="messages" aria-live="polite"></div>
+      <div id="typing-indicator" style="display:none;padding:6px 16px;color:#6b7280;font-size:13px;"></div>
 
       <form id="chat-form" class="input-row">
         <input id="msg-input" name="message" type="text" autocomplete="off" placeholder="Write a message..." />
@@ -106,29 +124,22 @@
 
 {% block scripts %}
 <script>
-  const conversationId = "{{ conversation_id }}";
-  const userId = "{{ request.user.pk }}";
-  const totalParticipants = "{{ participants|length }}";
-  const participantIdsJson = "{{ participant_ids|safe }}";
-  const participantIds = JSON.parse(participantIdsJson);
-  let pendingSeenAcks = [];
+  const conversationId = '{{ conversation_id }}';
+  const userId = '{{ request.user.pk }}';
+  const otherUserId = '{{ other_user.pk|default:"" }}';
+  const otherUserName = '{{ other_user.get_full_name|default:other_user.username|default:"Someone" }}';
+  const pendingTicks = {};
+  let _client_lastTypingSent = 0;
+  let _client_typingClear = null;
 
-  function sendSeenAck(messageId) {
-    console.log('Sending seen ack for message', messageId);
-    if (socket && socket.readyState === 1) {
-      socket.send(JSON.stringify({ ack: 'seen', message_id: messageId }));
-    } else {
-      console.log('WebSocket not ready, queuing seen ack');
-      if (!pendingSeenAcks.includes(messageId)) {
-        pendingSeenAcks.push(messageId);
-      }
-    }
+  function getTickIcon(status) {
+    if (status === "sent") return '✔';
+    if (status === "delivered") return '✔✔';
+    if (status === "seen") return '<span style="color:#1da1f2;">✔✔</span>';
+    return '';
   }
 
   function addMessage(obj){
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chat-line';
-
     const isMe = (obj.sender_id == userId);
 
     const avatar = document.createElement('div');
@@ -136,11 +147,9 @@
     if (obj.sender_avatar) {
       const img = document.createElement('img');
       img.src = obj.sender_avatar;
-      img.alt = obj.sender_username || 'avatar';
       img.style.width = '40px';
       img.style.height = '40px';
       img.style.borderRadius = '50%';
-      avatar.innerHTML = '';
       avatar.appendChild(img);
     } else {
       avatar.textContent = (obj.sender_username || '?').charAt(0).toUpperCase();
@@ -148,31 +157,60 @@
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
-    // include tick element for messages sent by current user
-    // determine initial tick state for messages sent by current user
-    let ticksHtml = '';
+
+    // Apply inline styles to ensure correct colors regardless of external CSS caching
     if (isMe) {
-      const deliveredCount = Array.isArray(obj.delivered_to) ? obj.delivered_to.length : 0;
-      const seenCount = Array.isArray(obj.seen_by) ? obj.seen_by.length : 0;
-      const totalRecipients = totalParticipants - 1; // exclude sender
-      let tickText = '✓';
-      let tickColor = '#9ca3af'; // gray for sent
-      if (deliveredCount > 0) {
-        tickText = '✓✓';
-        tickColor = '#111'; // black for delivered
-      }
-      if (seenCount > 0) {
-        tickText = '✓✓';
-        tickColor = '#0055ff'; // brighter blue for seen
-      }
-      ticksHtml = `<span class="msg-ticks" data-message-id="${obj.id || ''}" data-delivered="${deliveredCount}" data-seen="${seenCount}" style="color:${tickColor}">${tickText}</span>`;
+      bubble.style.background = '#ffffff';
+      bubble.style.color = '#111';
+      bubble.style.border = '1px solid #f3eefb';
+      bubble.style.borderTopLeftRadius = '4px';
+    } else {
+      bubble.style.background = 'linear-gradient(135deg,#7c3aed,#a78bfa)';
+      bubble.style.color = 'white';
+      bubble.style.border = '1px solid rgba(255,255,255,0.06)';
+      bubble.style.borderTopRightRadius = '4px';
     }
-    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()} ${ticksHtml}</div>`;
+
+    const date = new Date(obj.created_at);
+    const timeString = isNaN(date.getTime()) ? 'Sending...' : date.toLocaleTimeString();
+
+    // header
+    const header = document.createElement('div');
+    header.style.fontSize = '13px';
+    header.style.fontWeight = '700';
+    header.style.marginBottom = '6px';
+    header.textContent = obj.sender_username || '';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.innerHTML = obj.content || '';
+
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'msg-meta';
+    metaDiv.textContent = timeString + ' ';
+
+    // ticks element is separate so we can update it robustly
+    let ticksSpan = null;
+    if (isMe) {
+      ticksSpan = document.createElement('span');
+      ticksSpan.className = 'msg-ticks';
+      ticksSpan.dataset.status = obj.status || 'sent';
+      ticksSpan.innerHTML = getTickIcon(ticksSpan.dataset.status);
+      metaDiv.appendChild(ticksSpan);
+    }
+
+    bubble.appendChild(header);
+    bubble.appendChild(contentDiv);
+    bubble.appendChild(metaDiv);
 
     const line = document.createElement('div');
     line.style.display = 'flex';
-    line.style.alignItems = 'flex-start';
     line.style.gap = '10px';
+
+    const msgId = obj.message_id || obj.id || '';
+    if (msgId) {
+      line.setAttribute('data-message-id', msgId);
+    }
+
     if (isMe) {
       line.style.justifyContent = 'flex-end';
       line.appendChild(bubble);
@@ -182,117 +220,135 @@
       line.appendChild(bubble);
     }
 
-    const messagesEl = document.getElementById('messages');
-    messagesEl.appendChild(line);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
+    document.getElementById('messages').appendChild(line);
+    document.getElementById('messages').scrollTop =
+      document.getElementById('messages').scrollHeight;
 
-  // track displayed messages to avoid duplicates
-  const displayedMessageIds = new Set();
-  let lastMessageId = null;
-
-  function fetchMessages(isPolling = false){
-    let url = `/messages/api/conversation/${conversationId}/messages/`;
-    if (isPolling && lastMessageId) {
-      url += `?since_id=${lastMessageId}`;
+    // if a delivered/read event arrived before we rendered the message, apply pending tick update
+    if (msgId && pendingTicks[msgId]) {
+      updateTicks(msgId, pendingTicks[msgId]);
+      delete pendingTicks[msgId];
     }
-    return fetch(url).then(r=>r.json()).then(data=>{
-      const msgs = data.messages || [];
-      msgs.forEach(m=>{
-        if (!displayedMessageIds.has(m.id)){
-          addMessage({ id: m.id, sender_id: m.sender_id, content: m.content, created_at: m.created_at, sender_username: m.sender_username, sender_avatar: m.sender_avatar, delivered_to: m.delivered_to || [], seen_by: m.seen_by || [] });
-          if (m.sender_id != userId) {
-            sendSeenAck(m.id);
-          }
-          displayedMessageIds.add(m.id);
-          lastMessageId = m.id;
-        }
-      });
-    }).catch(err=>console.error('Failed to fetch messages', err));
   }
 
-  // initial load
-  fetchMessages();
+  function renderTickForStatus(status){
+    if(status === 'sent') return '✔';
+    if(status === 'delivered') return '✔✔';
+    if(status === 'seen') return '<span style="color:#1da1f2;">✔✔</span>';
+    return '';
+  }
+
+  function updateTicks(messageId, status){
+    if(!messageId) return;
+    const el = document.querySelector(`[data-message-id="${messageId}"] .msg-ticks`);
+    if(!el) {
+      // message DOM not created yet; remember desired status for later
+      pendingTicks[messageId] = status;
+      return;
+    }
+    el.dataset.status = status;
+    el.innerHTML = renderTickForStatus(status);
+  }
+
+  // fetch old messages
+  fetch(`/messages/api/conversation/${conversationId}/messages/`)
+    .then(r => r.json())
+    .then(data => {
+      data.messages.forEach(addMessage);
+    });
 
   const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
   const socket = new WebSocket(wsUrl);
 
-  socket.addEventListener('open', function() {
-    console.log('WebSocket open', wsUrl);
-    // Send pending seen acks when WebSocket opens
-    if (pendingSeenAcks.length > 0) {
-      pendingSeenAcks.forEach(mid => {
-        try {
-          socket.send(JSON.stringify({ ack: 'seen', message_id: mid }));
-        } catch (err) {
-          console.error('Failed to send pending seen ack', err);
-        }
-      });
-      pendingSeenAcks = []; // Clear after sending
-    }
-  });
-
-  socket.addEventListener('error', function(err){
-    console.error('WebSocket error', err);
-    // On error, start polling and queue seen acks
-    startPolling();
-  });
-
-  // polling fallback when websocket is closed/unavailable
-  let pollInterval = null;
-  function startPolling(){
-    if (pollInterval) return;
-    pollInterval = setInterval(() => fetchMessages(true), 3000);
-    console.log('Started polling for messages');
-  }
-  function stopPolling(){
-    if (!pollInterval) return;
-    clearInterval(pollInterval);
-    pollInterval = null;
-    console.log('Stopped polling for messages');
-  }
-
   socket.onmessage = function(e){
     const data = JSON.parse(e.data);
     console.log('WebSocket message received:', data);
-    if (data.event === 'message'){
-      if (!displayedMessageIds.has(data.message_id)){
-        addMessage({ id: data.message_id, sender_id: data.sender_id, content: data.message, created_at: data.created_at, sender_username: data.sender_username, sender_avatar: data.sender_avatar, delivered_to: data.delivered_to || [], seen_by: data.seen_by || [] });
-        displayedMessageIds.add(data.message_id);
-        // sender of this message may be someone else; if it's not me, send a seen ack so sender can get read receipts
-        if (data.sender_id != userId) {
-          // inform server that we've seen the message (very simple: mark seen immediately when delivered to client)
-          try {
-            socket.send(JSON.stringify({ ack: 'seen', message_id: data.message_id }));
-          } catch (err) {
-            console.error('Failed to send seen ack', err);
+
+    // Only add a message element for actual chat messages
+    if (data.event === 'message') {
+      addMessage({
+        sender_id: data.sender_id,
+        message_id: data.message_id,
+        content: data.message,
+        created_at: data.created_at || '',
+        sender_username: data.sender_username,
+        sender_avatar: data.sender_avatar,
+        status: data.status
+      });
+    } else if (data.event === 'delivered') {
+      const mid = data.message_id;
+      const senderId = data.sender_id || data.sender_id;
+      // only update sender's UI ticks
+      if (mid && String(senderId) == String(userId)) {
+        updateTicks(mid, 'delivered');
+      }
+    } else if (data.event === 'read') {
+      const mid = data.message_id;
+      const senderId = data.sender_id || data.sender_id;
+      if (mid && String(senderId) == String(userId)) {
+        updateTicks(mid, 'seen');
+      }
+    } else if (data.event === 'typing') {
+      // show typing indicator for other users
+      try {
+        if (String(data.user_id) !== String(userId)) {
+          if (data.typing) {
+            const who = otherUserName || 'Someone';
+            const el = document.getElementById('typing-indicator');
+            if (el) {
+              el.textContent = `${who} is typing...`;
+              el.style.display = 'block';
+            }
+          } else {
+            const el = document.getElementById('typing-indicator');
+            if (el) el.style.display = 'none';
           }
         }
-      }
-    } else if (data.event === 'delivered'){
-      console.log('Delivered event for message', data.message_id);
-      // update tick to double tick for messages that belong to current user
-      const mid = data.message_id;
-      const ticks = document.querySelectorAll(`.msg-ticks[data-message-id="${mid}"]`);
-      ticks.forEach(t => { t.textContent = '✓✓'; t.style.color = '#111'; });
-    } else if (data.event === 'read' || data.event === 'seen'){
-      console.log('Read/seen event for message', data.message_id);
-      const mid = data.message_id;
-      const ticks = document.querySelectorAll(`.msg-ticks[data-message-id="${mid}"]`);
-      ticks.forEach(t => { t.textContent = '✓✓'; t.style.color = '#0055ff'; });
+      } catch (err) { console.error(err); }
+    } else if (data.event === 'presence') {
+      try {
+        if (String(data.user_id) !== String(userId)) {
+          const dot = document.getElementById('presence-dot');
+          const text = document.getElementById('presence-text');
+          if (dot) {
+            if (data.status === 'online') {
+              dot.classList.add('online');
+              dot.classList.remove('offline');
+              if (text) { text.style.display = 'none'; }
+            } else {
+              dot.classList.add('offline');
+              dot.classList.remove('online');
+              if (text) { text.style.display = 'none'; }
+            }
+          }
+        }
+      } catch (err) { console.error(err); }
     }
+  };
+
+  // Typing: send debounced typing pings to server
+  function sendTyping(isTyping){
+    try{
+      if (socket && socket.readyState === 1){
+        socket.send(JSON.stringify({ typing: !!isTyping }));
+      }
+    }catch(e){ console.error('sendTyping failed', e); }
   }
 
-  socket.addEventListener('close', function(){
-    console.warn('WebSocket closed, starting polling');
-    startPolling();
-  });
-
-  socket.addEventListener('open', function(){
-    // ensure we stop polling once websocket is open
-    stopPolling();
-  });
+  const msgInput = document.getElementById('msg-input');
+  if (msgInput){
+    msgInput.addEventListener('input', function(){
+      const now = Date.now();
+      if (now - _client_lastTypingSent > 800){
+        sendTyping(true);
+        _client_lastTypingSent = now;
+      }
+      if (_client_typingClear) clearTimeout(_client_typingClear);
+      _client_typingClear = setTimeout(function(){ sendTyping(false); _client_typingClear = null; }, 3000);
+    });
+    msgInput.addEventListener('blur', function(){ sendTyping(false); if (_client_typingClear) { clearTimeout(_client_typingClear); _client_typingClear = null; } });
+  }
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -580,48 +636,54 @@
       return;
     }
     const text = input.value.trim();
-    console.log('Message text:', text);
-    if(!text) return;
+    if (!text) return;
 
-    console.log('Conversation ID:', conversationId);
-    console.log('WebSocket readyState:', socket ? socket.readyState : 'No socket');
-
-    // prefer websocket when open
-    if (socket && socket.readyState === 1) {
-      console.log('Sending via WebSocket');
+    if (socket.readyState === 1) {
       socket.send(JSON.stringify({ message: text }));
       input.value = '';
       return;
     }
 
-    console.log('Sending via HTTP fallback');
-    // fallback to HTTP POST
     const csrftoken = getCookie('csrftoken');
     console.log('CSRF token:', csrftoken ? 'Present' : 'Missing');
     fetch(`/messages/api/conversation/${conversationId}/send/`, {
       method: 'POST',
-      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-CSRFToken': csrftoken || ''
       },
       body: `message=${encodeURIComponent(text)}`
-    }).then(r=> {
-      console.log('Fetch response status:', r.status);
-      return r.json();
-    }).then(data=>{
-      console.log('Fetch response data:', data);
+    }).then(r => r.json()).then(data => {
       if (data.message) {
-        addMessage({ id: data.message.id, sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at, delivered_to: [], seen_by: [] });
-        // mark message id as displayed so when the server broadcasts it we don't duplicate
-        if (data.message.id) displayedMessageIds.add(data.message.id);
+        addMessage({
+          message_id: data.message.id || data.message.message_id,
+          sender_id: data.message.sender_id,
+          content: data.message.content,
+          created_at: data.message.created_at,
+          status: "sent"
+        });
       }
-      input.value = '';
-    }).catch(err=>{
-      console.error('Send fallback failed', err);
-      alert('Failed to send message. Please try again.');
     });
+
+    input.value = '';
   });
   console.log('Send button listener attached');
+</script>
+<script>
+  // Toggle group admin panel visibility (admins only)
+  (function(){
+    const toggleBtn = document.getElementById('toggle-group-admin-btn');
+    const panel = document.getElementById('group-admin-panel');
+    if(!toggleBtn || !panel) return;
+    toggleBtn.addEventListener('click', function(){
+      if(panel.style.display === 'none' || panel.style.display === ''){
+        panel.style.display = 'block';
+        toggleBtn.textContent = 'Hide Management';
+      } else {
+        panel.style.display = 'none';
+        toggleBtn.textContent = 'Manage Group';
+      }
+    });
+  })();
 </script>
 {% endblock %}

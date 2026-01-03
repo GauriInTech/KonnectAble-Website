@@ -10,161 +10,68 @@
 
 {% block content %}
   <div class="inbox-wrap">
-    <h2>Your Conversations</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 style="margin:0">Your Conversations</h2>
+      <a href="/profiles/" class="btn" style="font-size:14px;padding:8px 12px;">Browse Profiles</a>
+    </div>
+
     <div class="card create-group-card">
-      <h3>Start a Conversation</h3>
-      <div class="search-container">
-        <input id="user-search" type="search" placeholder="Search for users..." autocomplete="off">
-        <div id="search-results" class="search-results" style="display:none;"></div>
-        <div id="selected-users" class="selected-users"></div>
-        <button id="start-conversation-btn" class="btn" disabled>Start Conversation</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h3 style="margin:0 0 6px 0;color:var(--accent-1);">Start a Conversation</h3>
+          <div class="muted-note">Search users to start a one-on-one chat or create a group.</div>
+        </div>
+        <button id="start-conversation-btn" class="btn" disabled style="height:38px;">Start</button>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:flex-start;">
+        <div style="flex:1;position:relative;">
+          <input id="user-search" class="search-input" type="search" placeholder="Search for users..." autocomplete="off" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6e6f0;background:#fff;">
+          <div id="search-results" class="search-results" style="display:none;"></div>
+          <div id="selected-users" class="selected-users"></div>
+        </div>
       </div>
 
       <form id="conversation-form" method="post" action="{% url 'message:create_group' %}" style="display:none;">
         {% csrf_token %}
       </form>
-
-      <script>
-        (function(){
-          const searchInput = document.getElementById('user-search');
-          const resultsDiv = document.getElementById('search-results');
-          const selectedDiv = document.getElementById('selected-users');
-          const startBtn = document.getElementById('start-conversation-btn');
-          const form = document.getElementById('conversation-form');
-          let selectedUsers = [];
-          let timeout = null;
-
-          function updateStartButton() {
-            const count = selectedUsers.length;
-            startBtn.disabled = count === 0;
-            startBtn.textContent = count === 0 ? 'Start Conversation' : count === 1 ? 'Start Chat' : `Create Group (${count})`;
-          }
-
-          function addSelectedUser(user) {
-            if (selectedUsers.find(u => u.id === user.id)) return;
-            selectedUsers.push(user);
-            updateSelectedUI();
-            updateStartButton();
-            searchInput.value = '';
-            resultsDiv.style.display = 'none';
-          }
-
-          function removeSelectedUser(userId) {
-            selectedUsers = selectedUsers.filter(u => u.id !== userId);
-            updateSelectedUI();
-            updateStartButton();
-          }
-
-          function updateSelectedUI() {
-            selectedDiv.innerHTML = '';
-            selectedUsers.forEach(user => {
-              const chip = document.createElement('div');
-              chip.className = 'user-chip';
-              chip.innerHTML = `
-                <span>${user.full_name || user.username}</span>
-                <button type="button" onclick="removeUser(${user.id})">&times;</button>
-              `;
-              selectedDiv.appendChild(chip);
-            });
-          }
-
-          window.removeUser = removeSelectedUser;
-
-          function fetchUsers(q) {
-            fetch(`/messages/api/users/search/?q=${encodeURIComponent(q)}`)
-              .then(r => r.json())
-              .then(data => {
-                resultsDiv.innerHTML = '';
-                if (data.users.length === 0) {
-                  resultsDiv.innerHTML = '<div class="no-results">No users found</div>';
-                } else {
-                  data.users.forEach(user => {
-                    const item = document.createElement('div');
-                    item.className = 'search-result-item';
-                    item.innerHTML = `
-                      <div class="user-info">
-                        <strong>${user.full_name || user.username}</strong>
-                        <small>@${user.username}</small>
-                      </div>
-                    `;
-                    item.onclick = () => addSelectedUser(user);
-                    resultsDiv.appendChild(item);
-                  });
-                }
-                resultsDiv.style.display = data.users.length > 0 ? 'block' : 'none';
-              })
-              .catch(err => {
-                console.error('Failed to fetch users', err);
-                resultsDiv.innerHTML = '<div class="no-results">Error loading users</div>';
-                resultsDiv.style.display = 'block';
-              });
-          }
-
-          searchInput.addEventListener('input', function(){
-            const q = this.value.trim();
-            clearTimeout(timeout);
-            if (q.length > 0) {
-              timeout = setTimeout(() => fetchUsers(q), 300);
-            } else {
-              resultsDiv.style.display = 'none';
-            }
-          });
-
-          searchInput.addEventListener('focus', function(){
-            if (this.value.trim().length > 0) {
-              fetchUsers(this.value.trim());
-            }
-          });
-
-          document.addEventListener('click', function(e){
-            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-              resultsDiv.style.display = 'none';
-            }
-          });
-
-          startBtn.addEventListener('click', function(){
-            if (selectedUsers.length === 0) return;
-
-            // Add hidden inputs to form
-            form.innerHTML = '{% csrf_token %}';
-            selectedUsers.forEach(user => {
-              const input = document.createElement('input');
-              input.type = 'hidden';
-              input.name = 'user_ids';
-              input.value = user.id;
-              form.appendChild(input);
-            });
-
-            form.submit();
-          });
-        })();
-      </script>
     </div>
+
     <div class="card">
-    {% if conversation_items %}
-      <div style="display:flex;flex-direction:column;gap:8px">
-      {% for item in conversation_items %}
-        <a class="conv" href="{% url 'message:chat_conversation' item.conversation.pk %}">
-          <div class="avatar">
-            {% if item.other and item.other.profile and item.other.profile.profile_image %}
-              <img src="{{ item.other.profile.profile_image.url }}" alt="{{ item.other.username }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">
-            {% else %}
-              {% if item.other %}{{ item.other.username|first|upper }}{% else %}G{% endif %}
-            {% endif %}
-          </div>
-          <div class="meta">
-            <div style="display:flex;flex-direction:column">
-              <div class="name">{% if item.other %}{{ item.other.get_full_name|default:item.other.username }}{% else %}Group: {{ item.conversation.participants.count }} participants{% endif %}</div>
-              <div style="font-size:13px;color:#6b7280">{% if item.other %}@{{ item.other.username }}{% else %}{% for p in item.conversation.participants.all %}{% if not p.pk == request.user.pk %}{{ p.username }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}{% endif %}</div>
-            </div>
-            <div style="font-size:13px;color:#6b7280">Open →</div>
-          </div>
-        </a>
-      {% endfor %}
-      </div>
-    {% else %}
-      <div class="no-conv">No conversations yet. Visit profiles to start a chat.</div>
-    {% endif %}
+      {% if conversation_items %}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          {% for item in conversation_items %}
+            <a class="conv" href="{% url 'message:chat_conversation' item.conversation.pk %}">
+              <div class="avatar">
+                {% if item.other and item.other.profile and item.other.profile.profile_image %}
+                  <img src="{{ item.other.profile.profile_image.url }}" alt="{{ item.other.username }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">
+                {% else %}
+                  {% if item.other %}{{ item.other.username|first|upper }}{% else %}G{% endif %}
+                {% endif %}
+              </div>
+              <div class="meta">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="name">{% if item.other %}{{ item.other.get_full_name|default:item.other.username }}{% else %}Group: {{ item.conversation.participants.count }}{% endif %}</div>
+                    {% if item.unread_count %}
+                      <div class="unread-badge">{{ item.unread_count }}</div>
+                    {% endif %}
+                  </div>
+                  {% if item.last_message %}
+                    <div class="last" style="font-size:13px;color:var(--muted);">{{ item.last_message }}</div>
+                  {% endif %}
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                  <div class="time" style="font-size:12px;color:var(--muted);">{{ item.last_message_time|default:"" }}</div>
+                  <div style="font-size:13px;color:var(--muted);">→</div>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="no-conv">No conversations yet. Visit profiles to start a chat.</div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

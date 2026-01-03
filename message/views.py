@@ -7,6 +7,7 @@ from .models import Conversation, Message
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import json
+from django.db import transaction
 
 User = get_user_model()
 
@@ -14,16 +15,9 @@ User = get_user_model()
 @login_required
 def chat_with_user(request, other_user_id):
     other = get_object_or_404(User, pk=other_user_id)
-
-    # try to find an existing one-on-one conversation
-    conv = Conversation.objects.filter(participants=other).filter(participants=request.user).distinct()
-    # narrow to conversations with exactly 2 participants
-    conv = [c for c in conv if c.participants.count() == 2]
-    if conv:
-        conversation = conv[0]
-    else:
-        conversation = Conversation.objects.create(created_by=request.user)
-        conversation.participants.add(request.user, other)
+    # find or create conversation for these two users
+    conv, created = Conversation.get_or_create_for_users([other.pk], created_by=request.user)
+    conversation = conv
 
     return render(request, 'message/chat.html', {
         'conversation_id': conversation.pk,
@@ -37,11 +31,55 @@ def conversation_messages(request, conversation_id):
     if not conv.participants.filter(pk=request.user.pk).exists():
         return HttpResponseForbidden()
 
+    # ✅ STEP 3: mark SENT → DELIVERED (atomic, per-message)
+    delivered_ids = []
+    try:
+        with transaction.atomic():
+            delivered_ids = Message.bulk_mark_delivered_for_user(conv, request.user)
+    except Exception:
+        delivered_ids = []
+
+    # ✅ STEP 4: mark DELIVERED → SEEN (atomic, per-message)
+    seen_ids = []
+    try:
+        with transaction.atomic():
+            seen_ids = Message.bulk_mark_seen_for_user(conv, request.user)
+    except Exception:
+        seen_ids = []
+
+    # Broadcast delivered events
+    channel_layer = get_channel_layer()
+    for mid in delivered_ids:
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{conversation_id}',
+            {
+                'type': 'chat.delivered',
+                'message_id': mid,
+                'user_id': request.user.pk,
+                'sender_id': (Message.objects.filter(pk=mid).values_list('sender_id', flat=True).first()),
+                'status': 'delivered',
+            }
+        )
+
+    # Broadcast read events
+    for mid in seen_ids:
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{conversation_id}',
+            {
+                'type': 'chat.read',
+                'message_id': mid,
+                'user_id': request.user.pk,
+                'sender_id': (Message.objects.filter(pk=mid).values_list('sender_id', flat=True).first()),
+                'status': 'seen',
+            }
+        )
+
     since_id = request.GET.get('since_id')
     if since_id:
-        msgs = conv.messages.filter(id__gt=since_id).order_by('id')[:200]
+        msgs = conv.messages.filter(id__gt=since_id).order_by('created_at')[:200]
     else:
-        msgs = conv.messages.all().order_by('id')[:200]
+        msgs = conv.messages.all().order_by('created_at')[:200]
+
     data = [
         {
             'id': m.pk,
@@ -50,7 +88,12 @@ def conversation_messages(request, conversation_id):
             'created_at': m.created_at.isoformat(),
             'sender_username': getattr(m.sender, 'username', ''),
             'sender_full_name': getattr(m.sender, 'get_full_name', lambda: '')() if hasattr(m.sender, 'get_full_name') else '',
-            'sender_avatar': (m.sender.profile.profile_image.url if getattr(getattr(m.sender, 'profile', None), 'profile_image', None) else ''),
+            'sender_avatar': (
+                m.sender.profile.profile_image.url
+                if getattr(getattr(m.sender, 'profile', None), 'profile_image', None)
+                else ''
+            ),
+            'status': m.status,  # 👈 important for blue ticks
             'delivered_to': list(m.delivered_to.values_list('pk', flat=True)),
             'seen_by': list(m.seen_by.values_list('pk', flat=True)),
         }
@@ -117,7 +160,6 @@ def send_message(request, conversation_id):
         pass
 
     return JsonResponse({'message': data})
-from django.shortcuts import render
 
 
 @login_required
@@ -158,9 +200,21 @@ def create_group(request):
         # require at least one selected user
         return redirect(reverse('message:inbox') + '?error=' + 'Please+select+at+least+one+user')
 
+    # desired participant ids (include creator)
+    desired_ids = set([int(request.user.pk)]) | set(int(u.pk) for u in users)
+
+    # try to find an existing conversation with exactly the same participants
+    candidates = Conversation.objects.filter(participants__pk__in=desired_ids).distinct()
+    for c in candidates:
+        part_ids = set(c.participants.values_list('pk', flat=True))
+        if part_ids == desired_ids:
+            return redirect('message:chat_conversation', conversation_id=c.pk)
+
+    # no match -> create a new conversation
     conv = Conversation.objects.create(created_by=request.user)
-    # add creator + provided users
     conv.participants.add(request.user, *list(users))
+    # make the creator an admin by default
+    conv.admins.add(request.user)
 
     return redirect('message:chat_conversation', conversation_id=conv.pk)
 
@@ -187,8 +241,6 @@ def search_users(request):
         results.append({'id': u.pk, 'username': u.username, 'full_name': full_name})
 
     return JsonResponse({'users': results})
-
-# Create your views here.
 
 
 @login_required
