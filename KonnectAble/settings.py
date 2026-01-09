@@ -44,7 +44,7 @@ SECRET_KEY = 'django-insecure-j31^f(^x7@$4+0rk6ra*vj2xftw_yj=xsgu$i9csdqx0uf78e&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -80,7 +80,7 @@ ROOT_URLCONF = 'KonnectAble.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -169,3 +169,32 @@ ENABLE_CLAUDE_HAIKU_4_5 = os.getenv('ENABLE_CLAUDE_HAIKU_4_5', 'false').lower() 
 
 # Placeholder for Anthropic API key (set in environment for production use).
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+
+
+# Simple logging for debugging WebSocket connections during development
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'message': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+

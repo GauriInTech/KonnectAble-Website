@@ -18,6 +18,18 @@ class Message(models.Model):
 	sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_messages")
 	content = models.TextField(blank=True)
 	created_at = models.DateTimeField(default=timezone.now, db_index=True)
+	# status: 'sent' -> saved by sender, 'delivered' -> received by recipient device, 'read' -> opened/read by recipient
+	STATUS_SENT = 'sent'
+	STATUS_DELIVERED = 'delivered'
+	STATUS_READ = 'read'
+
+	STATUS_CHOICES = [
+		(STATUS_SENT, 'Sent'),
+		(STATUS_DELIVERED, 'Delivered'),
+		(STATUS_READ, 'Read'),
+	]
+
+	status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_SENT, db_index=True)
 	is_read = models.BooleanField(default=False)
 
 	class Meta:

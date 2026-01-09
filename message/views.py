@@ -40,6 +40,8 @@ def conversation_messages(request, conversation_id):
             'sender_id': m.sender_id,
             'content': m.content,
             'created_at': m.created_at.isoformat(),
+            'is_read': m.is_read,
+            'status': getattr(m, 'status', 'sent'),
             'sender_username': getattr(m.sender, 'username', ''),
             'sender_full_name': getattr(m.sender, 'get_full_name', lambda: '')() if hasattr(m.sender, 'get_full_name') else '',
             'sender_avatar': (m.sender.profile.profile_image.url if getattr(getattr(m.sender, 'profile', None), 'profile_image', None) else ''),
@@ -76,12 +78,13 @@ def send_message(request, conversation_id):
     if not text:
         return JsonResponse({'error': 'empty message'}, status=400)
 
-    msg = Message.objects.create(conversation=conv, sender=request.user, content=text)
+    msg = Message.objects.create(conversation=conv, sender=request.user, content=text, status=Message.STATUS_SENT)
     data = {
         'id': msg.pk,
         'sender_id': msg.sender_id,
         'content': msg.content,
         'created_at': msg.created_at.isoformat(),
+        'status': getattr(msg, 'status', 'sent'),
     }
     return JsonResponse({'message': data})
 from django.shortcuts import render

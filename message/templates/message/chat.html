@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block body_class %}chat-theme{% endblock %}
+
 {% block head %}
   <title>Chat</title>
   <link rel="stylesheet" href="/static/css/style.css">
@@ -33,10 +35,8 @@
   const userId = '{{ request.user.pk }}';
 
   function addMessage(obj){
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chat-line';
-
-    const isMe = (obj.sender_id == userId);
+    const isMe = (String(obj.sender_id) === String(userId));
+    const messageId = obj.message_id || obj.id || obj.pk || '';
 
     const avatar = document.createElement('div');
     avatar.className = 'avatar';
@@ -53,7 +53,14 @@
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (isMe ? 'me' : 'them');
-    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta">${new Date(obj.created_at).toLocaleTimeString()}</div>`;
+    let tickHtml = '';
+    if (isMe) {
+      const status = obj.status || (obj.is_read ? 'read' : 'sent');
+      if (status === 'sent') tickHtml = `<span class="read-tick" data-status="sent">✓</span>`;
+      else if (status === 'delivered') tickHtml = `<span class="read-tick" data-status="delivered">✓✓</span>`;
+      else if (status === 'read') tickHtml = `<span class="read-tick read" data-status="read">✓✓</span>`;
+    }
+    bubble.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:6px;">${obj.sender_username || ''}</div><div>${obj.content}</div><div class="msg-meta" data-message-id="${messageId}">${new Date(obj.created_at).toLocaleTimeString()} ${tickHtml}</div>`;
 
     const line = document.createElement('div');
     line.style.display = 'flex';
@@ -70,19 +77,79 @@
 
     document.getElementById('messages').appendChild(line);
     document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    
+    // send delivered ack for incoming messages (only once)
+    if (!isMe && messageId) {
+      const sid = String(messageId);
+      if (!deliveredSent.has(sid)) {
+        if (socket && socket.readyState === 1) {
+          try {
+            socket.send(JSON.stringify({ action: 'delivered', message_id: messageId }));
+            deliveredSent.add(sid);
+          } catch (e) {
+            console.error('Failed to send delivered ack', e);
+            pendingDeliveredIds.add(messageId);
+          }
+        } else {
+          pendingDeliveredIds.add(messageId);
+        }
+      }
+
+      // if the chat window is focused, also send a read ack immediately
+      if (document.hasFocus()) {
+        if (!readSent.has(sid)) {
+          try {
+            if (socket && socket.readyState === 1) {
+              socket.send(JSON.stringify({ action: 'read', message_ids: [messageId] }));
+              readSent.add(sid);
+            } else {
+              pendingReadIds.add(messageId);
+            }
+          } catch (e) {
+            console.error('Failed to send read ack', e);
+            pendingReadIds.add(messageId);
+          }
+        }
+      }
+    }
   }
 
   // fetch existing messages
   fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
     data.messages.forEach(addMessage);
-  });
+  }).catch(()=>{});
 
   const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const wsUrl = `${wsProto}://${window.location.host}/ws/chat/${conversationId}/`;
   const socket = new WebSocket(wsUrl);
+  const deliveredSent = new Set();
+  const pendingDeliveredIds = new Set();
+  const readSent = new Set();
+  const pendingReadIds = new Set();
 
   socket.addEventListener('open', function() {
     console.log('WebSocket open', wsUrl);
+    if (pendingDeliveredIds.size) {
+      const ids = Array.from(pendingDeliveredIds);
+      try {
+        ids.forEach(id => socket.send(JSON.stringify({ action: 'delivered', message_id: id })));
+        ids.forEach(i => deliveredSent.add(String(i)));
+      } catch (e) {
+        console.error('Failed to send pending delivered acks', e);
+      }
+      pendingDeliveredIds.clear();
+    }
+
+    if (pendingReadIds.size) {
+      const ids = Array.from(pendingReadIds);
+      try {
+        socket.send(JSON.stringify({ action: 'read', message_ids: ids }));
+        ids.forEach(i => readSent.add(String(i)));
+      } catch (e) {
+        console.error('Failed to send pending read acks', e);
+      }
+      pendingReadIds.clear();
+    }
   });
 
   socket.addEventListener('error', function(err){
@@ -91,7 +158,35 @@
 
   socket.onmessage = function(e){
     const data = JSON.parse(e.data);
-    addMessage({ sender_id: data.sender_id, content: data.message, created_at: data.created_at });
+    console.debug('WS received', data);
+    if (data.type === 'user_typing') return;
+    if (data.type === 'message_status') {
+      const msgId = data.message_id;
+      const status = data.status;
+      // only update ticks for messages sent by this client
+      const meta = document.querySelector(`.msg-meta[data-message-id="${msgId}"]`);
+      if (!meta) return;
+      const tick = meta.querySelector('.read-tick');
+      if (!tick) return;
+      if (status === 'sent') { tick.textContent = '✓'; tick.classList.remove('read'); }
+      if (status === 'delivered') { tick.textContent = '✓✓'; tick.classList.remove('read'); }
+      if (status === 'read') { tick.textContent = '✓✓'; tick.classList.add('read'); }
+      return;
+    }
+
+    if (data.type === 'chat_message' || data.message) {
+      const payload = {
+        sender_id: data.sender_id,
+        content: data.message || data.content,
+        created_at: data.created_at,
+        message_id: data.message_id,
+        is_read: data.status === 'read' || false,
+        status: data.status || 'sent',
+        sender_username: data.sender_username || '',
+        sender_avatar: data.sender_avatar || ''
+      };
+      addMessage(payload);
+    }
   }
 
   function getCookie(name) {
@@ -106,14 +201,12 @@
     const text = input.value.trim();
     if(!text) return;
 
-    // prefer websocket when open
     if (socket && socket.readyState === 1) {
       socket.send(JSON.stringify({ message: text }));
       input.value = '';
       return;
     }
 
-    // fallback to HTTP POST
     const csrftoken = getCookie('csrftoken');
     fetch(`/messages/api/conversation/${conversationId}/send/`, {
       method: 'POST',
@@ -125,11 +218,61 @@
       body: `message=${encodeURIComponent(text)}`
     }).then(r=>r.json()).then(data=>{
       if (data.message) {
-        addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at });
+        addMessage({ sender_id: data.message.sender_id, content: data.message.content, created_at: data.message.created_at, message_id: data.message.id, is_read: !!data.message.is_read });
       }
     }).catch(err=>console.error('Send fallback failed', err));
 
     input.value = '';
   });
+
+  // polling fallback to refresh read ticks in case WS events are missed
+  function pollReadStatus(){
+    fetch(`/messages/api/conversation/${conversationId}/messages/`).then(r=>r.json()).then(data=>{
+      data.messages.forEach(m => {
+        const id = m.id || m.message_id || m.pk;
+        if (!id) return;
+        if (m.is_read) {
+          const tickElement = document.querySelector(`.msg-meta[data-message-id="${id}"] .read-tick`);
+          if (tickElement && !tickElement.classList.contains('read')) {
+            tickElement.classList.add('read');
+            tickElement.textContent = '✓✓';
+          }
+        }
+      });
+    }).catch(()=>{});
+  }
+
+  // when the window/tab becomes focused, send read acks for any delivered but unread messages
+  window.addEventListener('focus', () => {
+    // gather message ids that have been delivered but not yet marked read by this client
+    const metas = Array.from(document.querySelectorAll('.msg-meta'));
+    const toRead = [];
+    metas.forEach(m => {
+      const id = m.getAttribute('data-message-id');
+      if (!id) return;
+      const tick = m.querySelector('.read-tick');
+      // if there's no tick or tick is single/delivered, treat as unread by recipient
+      if (!tick || tick.getAttribute('data-status') === 'delivered' || !tick.classList.contains('read')) {
+        // ensure we only send read for messages not sent by this client
+        const parentBubble = m.closest('.bubble');
+        if (parentBubble && parentBubble.classList.contains('them')) {
+          toRead.push(id);
+        }
+      }
+    });
+    if (toRead.length && socket && socket.readyState === 1) {
+      try {
+        socket.send(JSON.stringify({ action: 'read', message_ids: toRead }));
+        toRead.forEach(i => readSent.add(String(i)));
+      } catch (e) {
+        toRead.forEach(i => pendingReadIds.add(i));
+      }
+    }
+  });
+
+  // start polling every 4 seconds
+  const pollInterval = setInterval(pollReadStatus, 4000);
+  // stop polling when page is unloaded
+  window.addEventListener('beforeunload', ()=> clearInterval(pollInterval));
 </script>
 {% endblock %}
