@@ -4,7 +4,7 @@
                 <div class="create-post-header">
                         <div class="avatar-circle-wrapper">
                             {% if request.user.profile and request.user.profile.profile_image %}
-                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="avatar-circle-img">
                             {% else %}
                                 <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
                             {% endif %}
@@ -16,7 +16,7 @@
             {% csrf_token %}
             <textarea name="content" rows="3" placeholder="Share your thoughts..."></textarea>
             <input type="file" name="image" accept="image/*">
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+            <div class="form-actions">
                 <button type="submit" class="main-btn">Post</button>
             </div>
         </form>
@@ -25,25 +25,25 @@
     <!-- POSTS FEED -->
     {% for post in posts %}
         <div class="post-card">
-                        <div class="post-header" style="display:flex;align-items:center;gap:12px;">
+                        <div class="post-header post-header-flex">
                                 <div class="avatar-circle-wrapper">
                             {% if request.user.profile and request.user.profile.profile_image %}
-                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="avatar-circle-img">
                             {% else %}
                                 <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
                             {% endif %}
                         </div>
-                                <div style="flex:1;">
-                                    <div style="font-weight:700">{{ post.user.username }}</div>
+                                <div class="post-header-info">
+                                    <div class="post-author">{{ post.user.username }}</div>
                                     <div class="post-time">{{ post.created_at|timesince }} ago</div>
                                 </div>
                         </div>
 
-            <div style="margin:15px 0;">
+            <div class="post-content">
                 <p>{{ post.content }}</p>
                 {% if post.image %}
-                    <div style="margin-top:10px;">
-                        <img src="{{ post.image.url }}" alt="Post image" style="max-width:100%; border-radius:8px;">
+                    <div class="post-image-container">
+                        <img src="{{ post.image.url }}" alt="Post image" class="post-image">
                     </div>
                 {% endif %}
             </div>
@@ -62,19 +62,17 @@
                 </form>
 
                 <!-- COMMENT -->
-                <a href="#comment-form-{{ post.id }}" class="action-btn"
-                   style="text-decoration:none; display:inline-block; text-align:center;">
+                <a href="#comment-form-{{ post.id }}" class="action-btn comment-link">
                     💬 Comment
                 </a>
 
                 <!-- DELETE BUTTON -->
                 {% if post.user == request.user %}
-                    <form method="post" action="{% url 'delete_post' post.id %}" style="display:inline;">
+                    <form method="post" action="{% url 'delete_post' post.id %}" class="delete-form">
                         {% csrf_token %}
                         <button type="submit"
-                                class="action-btn"
-                                onclick="return confirm('Delete this post?')"
-                                style="color:#e74c3c;">
+                                class="action-btn delete-btn"
+                                onclick="return confirm('Delete this post?')">
                             🗑️ Delete
                         </button>
                     </form>
@@ -85,20 +83,20 @@
             <div id="comment-form-{{ post.id }}" class="comment-form">
                 <form method="post" action="{% url 'add_comment' post.id %}">
                     {% csrf_token %}
-                    <textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%;"></textarea>
-                    <button type="submit" class="main-btn" style="margin-top:8px;">Comment</button>
+                    <textarea name="text" rows="2" placeholder="Write a comment..." class="comment-textarea"></textarea>
+                    <button type="submit" class="main-btn comment-submit-btn">Comment</button>
                 </form>
             </div>
 
             <!-- SHOW COMMENTS -->
             {% for comment in post.comments.all %}
-                <div style="margin-top:10px; padding:10px; background:#f9f9f9; border-radius:6px;">
-                    <strong>{{ comment.user.username }}</strong>
-                    <span style="font-size:12px; color:#666;">{{ comment.created_at|timesince }} ago</span>
-                    <p style="margin:5px 0 0 0;">{{ comment.text }}</p>
+                <div class="comment-item">
+                    <strong class="comment-author">{{ comment.user.username }}</strong>
+                    <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+                    <p class="comment-text">{{ comment.text }}</p>
                 </div>
             {% endfor %}
         </div>
     {% empty %}
-        <p style="text-align:center; color:#666;">No posts yet. Create the first one!</p>
+        <p class="empty-state">No posts yet. Create the first one!</p>
     {% endfor %}

@@ -39,6 +39,11 @@ def user_dashboard(request):
             ) | User.objects.filter(first_name__icontains=query) | User.objects.filter(last_name__icontains=query) | User.objects.filter(email__icontains=query)
             # avoid including current user in results
             search_results = search_results.exclude(pk=request.user.pk).distinct()
+            
+            # If exactly one result, redirect to that user's profile
+            if search_results.count() == 1:
+                user = search_results.first()
+                return redirect(reverse('profile_detail', args=[user.username]))
         else:
             search_results = []
 

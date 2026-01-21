@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% load static %}
 
@@ -36,7 +37,7 @@
           </a>
           
         {% elif request.user.is_authenticated %}
-          <form method="post" action="{% url 'toggle_support' profile.user.username %}" style="display:inline">
+          <form method="post" action="{% url 'toggle_support' profile.user.username %}" class="support-form">
             {% csrf_token %}
             {% if profile.is_supported_by_me %}
               <button type="submit" class="btn btn-primary">Un-support</button>
@@ -44,13 +45,13 @@
               <button type="submit" class="btn btn-primary">Support</button>
             {% endif %}
           </form>
-          <a href="{% url 'message:chat_with_user' profile.user.pk %}" class="btn btn-primary" style="margin-left:8px;">💬 Message</a>
+          <a href="{% url 'message:start_conversation' profile.user.pk %}" class="btn btn-primary message-link">💬 Message</a>
         {% endif %}
       </div>
       
       {% comment %} Applicant / Hiring partner details from jobPanel {% endcomment %}
       {% if applicant_profile %}
-        <hr style="margin:18px 0;">
+        <hr class="profile-section-hr">
         <h3>Applicant Details</h3>
         <p><strong>Headline:</strong> {{ applicant_profile.headline }}</p>
         <p><strong>Location:</strong> {{ applicant_profile.location }}</p>
@@ -62,7 +63,7 @@
       {% endif %}
 
       {% if hiring_profile %}
-        <hr style="margin:18px 0;">
+        <hr class="profile-section-hr">
         <h3>Hiring Partner</h3>
         <p><strong>Company:</strong> {{ hiring_profile.company_name }}</p>
         {% if hiring_profile.website %}

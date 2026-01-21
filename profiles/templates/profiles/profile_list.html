@@ -11,7 +11,7 @@
       <div class="profile-top">
         <div class="profile-avatar">
           {% if profile.profile_image %}
-            <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" style="width:56px;height:56px;border-radius:12px;object-fit:cover" />
+            <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="profile-avatar-img" />
           {% else %}
             {{ profile.user.username|slice:"0:2"|upper }}
           {% endif %}
@@ -26,7 +26,7 @@
 
       <div class="profile-actions">
         {% if request.user.is_authenticated and request.user.username != profile.user.username %}
-          <form method="post" action="{% url 'toggle_support' profile.user.username %}" style="display:inline" aria-label="Support {{ profile.user.username }}">
+          <form method="post" action="{% url 'toggle_support' profile.user.username %}" class="support-form" aria-label="Support {{ profile.user.username }}">
             {% csrf_token %}
             {% if profile.is_supported_by_me %}
               <button type="submit" class="btn btn-primary" aria-pressed="true" aria-label="Un-support {{ profile.user.username }}">Un-support<span class="sr-only"> {{ profile.user.username }}</span></button>

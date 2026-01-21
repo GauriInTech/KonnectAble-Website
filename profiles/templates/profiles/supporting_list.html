@@ -4,8 +4,8 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/profile.css' %}">
 
-<div class="profile-list-page" style="padding:1rem">
-  <h2 style="margin-bottom:12px">{{ profile.user.username }} is Supporting</h2>
+<div class="profile-list-page profile-list-page-padding">
+  <h2 class="profile-list-title">{{ profile.user.username }} is Supporting</h2>
   <div class="profiles-container">
     {% for p in supporting %}
       <div class="profile-card small">

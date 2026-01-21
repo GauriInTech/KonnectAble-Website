@@ -200,3 +200,34 @@
 
 /* Utility: screen-reader only text */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* Support form and message link styles */
+.support-form {
+  display: inline;
+}
+
+.message-link {
+  margin-left: 8px;
+}
+
+/* HR styles for profile sections */
+.profile-section-hr {
+  margin: 18px 0;
+}
+
+/* Profile avatar image styles */
+.profile-avatar-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Profile list page styles */
+.profile-list-page-padding {
+  padding: 1rem;
+}
+
+.profile-list-title {
+  margin-bottom: 12px;
+}

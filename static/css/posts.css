@@ -257,3 +257,100 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Avatar circle image styles */
+.avatar-circle-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Post header flex styles */
+.post-header-flex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-header-info {
+  flex: 1;
+}
+
+.post-author {
+  font-weight: 700;
+}
+
+/* Form actions styles */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* Comment link styles */
+.comment-link {
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Post content styles */
+.post-content {
+  margin: 15px 0;
+}
+
+.post-image-container {
+  margin-top: 10px;
+}
+
+.post-image {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* Delete form and button styles */
+.delete-form {
+  display: inline;
+}
+
+.delete-btn {
+  color: #e74c3c;
+}
+
+/* Comment textarea and submit button styles */
+.comment-textarea {
+  width: 100%;
+}
+
+.comment-submit-btn {
+  margin-top: 8px;
+}
+
+/* Empty state styles */
+.empty-state {
+  text-align: center;
+  color: #666;
+}
+
+/* Comment item styles */
+.comment-item {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.comment-author {
+  color: #7c3aed;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #666;
+}
+
+.comment-text {
+  margin: 5px 0 0 0;
+}

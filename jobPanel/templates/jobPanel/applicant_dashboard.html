@@ -13,13 +13,13 @@
     <p class="welcome-msg">Here are available jobs and your recent applications.</p>
 
     <section aria-labelledby="available-jobs">
-      <h3 id="available-jobs">Available Jobs</h3>
+      <h3 id="available-jobs"><i class="bi bi-briefcase-fill me-2"></i>Available Jobs</h3>
       <ul>
         {% for job in jobs %}
           <li>
             <div>
-              <div class="job-title"><a href="{% url 'job_detail' job.pk %}">{{ job.title }}</a></div>
-              <div class="job-company">{{ job.company }}</div>
+              <div class="job-title"><i class="bi bi-briefcase me-2"></i><a href="{% url 'job_detail' job.pk %}">{{ job.title }}</a></div>
+              <div class="job-company"><i class="bi bi-building me-2"></i>{{ job.company }}</div>
             </div>
             <div class="job-actions">
               {% if job.pk in applied_job_ids %}

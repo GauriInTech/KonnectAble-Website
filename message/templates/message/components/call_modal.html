@@ -1,0 +1,124 @@
+<!-- WebRTC Call Interface Modal -->
+<div id="callModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="callModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 20px;">
+            <div class="modal-body p-4" style="min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                
+                <!-- Incoming Call Alert -->
+                <div id="incomingCallAlert" style="display: none; width: 100%; text-align: center;">
+                    <div style="margin-bottom: 30px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-circle" style="font-size: 50px; color: white;"></i>
+                        </div>
+                        <h3 style="color: white; margin-bottom: 10px;">
+                            <span id="incomingCallerName">Someone</span> is calling...
+                        </h3>
+                        <p style="color: rgba(255,255,255,0.8); margin: 0;">
+                            <span id="incomingCallType">Audio</span> Call
+                        </p>
+                    </div>
+                    
+                    <!-- Ringing Animation -->
+                    <div style="margin-bottom: 30px;">
+                        <div class="ringing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Accept/Decline Buttons -->
+                    <div style="display: flex; gap: 20px; justify-content: center;">
+                        <button id="acceptCallBtn" class="btn" style="background: #4CAF50; color: white; border: none; border-radius: 50px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-telephone-fill" style="font-size: 24px;"></i>
+                        </button>
+                        <button id="declineCallBtn" class="btn" style="background: #f44336; color: white; border: none; border-radius: 50px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-telephone-x-fill" style="font-size: 24px;"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Active Call Interface -->
+                <div id="activeCallInterface" style="display: none; width: 100%; text-align: center;">
+                    <div style="margin-bottom: 30px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-circle" style="font-size: 50px; color: white;"></i>
+                        </div>
+                        <h3 style="color: white; margin-bottom: 10px;">
+                            <span id="callUserName">Someone</span>
+                        </h3>
+                        <p style="color: rgba(255,255,255,0.8); margin: 0;">
+                            <span id="callDuration">00:00</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Call Controls -->
+                    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                        <button id="muteCallBtn" class="btn call-control-btn" style="background: rgba(255,255,255,0.3); color: white; border: none; border-radius: 50px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;" title="Mute">
+                            <i class="bi bi-mic-fill" style="font-size: 20px;"></i>
+                        </button>
+                        <button id="endCallBtn" class="btn" style="background: #f44336; color: white; border: none; border-radius: 50px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;" title="End Call">
+                            <i class="bi bi-telephone-x-fill" style="font-size: 24px;"></i>
+                        </button>
+                        <button id="speakerCallBtn" class="btn call-control-btn" style="background: rgba(255,255,255,0.3); color: white; border: none; border-radius: 50px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;" title="Speaker">
+                            <i class="bi bi-volume-up-fill" style="font-size: 20px;"></i>
+                        </button>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ringtone Audio Element -->
+<audio id="ringtoneAudio" preload="auto">
+    <source src="{% static 'sounds/ringtone.mp3' %}" type="audio/mpeg">
+</audio>
+
+<style>
+    /* Ringing Animation */
+    .ringing-dots {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .ringing-dots span {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        animation: ring 1.4s infinite;
+    }
+    
+    .ringing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .ringing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes ring {
+        0%, 60%, 100% {
+            opacity: 0.3;
+            transform: scale(0.8);
+        }
+        30% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    /* Call Control Buttons Hover */
+    .call-control-btn:hover {
+        background: rgba(255,255,255,0.5) !important;
+        transition: background 0.3s ease;
+    }
+    
+    .call-control-btn.active {
+        background: rgba(244, 67, 54, 0.8) !important;
+    }
+</style>

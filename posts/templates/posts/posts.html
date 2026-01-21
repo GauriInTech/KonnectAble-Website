@@ -12,7 +12,7 @@
                         <div class="create-post-header">
                         <div class="avatar-circle-wrapper">
                             {% if request.user.profile and request.user.profile.profile_image %}
-                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+                                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="avatar-circle-img">
                             {% else %}
                                 <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
                             {% endif %}
@@ -24,7 +24,7 @@
             {% csrf_token %}
             <textarea name="content" rows="3" placeholder="Share your thoughts..."></textarea>
             <input type="file" name="image" accept="image/*">
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+            <div class="form-actions">
                 <button type="submit" class="main-btn">Post</button>
             </div>
         </form>
@@ -45,11 +45,11 @@
                                 </div>
                         </div>
 
-            <div style="margin:15px 0;">
+            <div class="post-content">
                 <p>{{ post.content }}</p>
                 {% if post.image %}
-                    <div style="margin-top:10px;">
-                        <img src="{{ post.image.url }}" alt="Post image" style="max-width:100%; border-radius:8px;">
+                    <div class="post-image-container">
+                        <img src="{{ post.image.url }}" alt="Post image" class="post-image">
                     </div>
                 {% endif %}
             </div>

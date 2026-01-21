@@ -12,8 +12,8 @@ urlpatterns = [
     path('my-profile/', profile_views.my_profile, name='my_profile_root'),
     path('dashboard/', RedirectView.as_view(pattern_name='accounts_home', permanent=False)),
     path('profiles/', include('profiles.urls')),
-    path('posts/', include('posts.urls')),   
-    path('messages/', include('message.urls')),
+    path('posts/', include('posts.urls')),
+    path('message/', include('message.urls')),
 ]
 
 if settings.DEBUG:

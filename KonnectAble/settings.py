@@ -110,6 +110,9 @@ DATABASES = {
 # point to the custom user model 
 AUTH_USER_MODEL = "accounts.User"
 
+# Login URL for @login_required decorator
+LOGIN_URL = 'login'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -151,6 +154,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (User uploaded files)
 MEDIA_URL = '/media/'
@@ -185,11 +189,6 @@ LOGGING = {
         'level': 'INFO',
     },
     'loggers': {
-        'message': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
         'channels': {
             'handlers': ['console'],
             'level': 'DEBUG',
