@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+import dj_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,13 +40,42 @@ if env_path.exists():
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
+def env_bool(name: str, default: bool = False) -> bool:
+    """Read a boolean from the environment."""
+
+    return os.getenv(name, str(default)).lower() in ('1', 'true', 'yes')
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j31^f(^x7@$4+0rk6ra*vj2xftw_yj=xsgu$i9csdqx0uf78e&'
+# In production, set DJANGO_SECRET_KEY (Render environment variable) to a secure value.
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-j31^f(^x7@$4+0rk6ra*vj2xftw_yj=xsgu$i9csdqx0uf78e&',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_bool('DEBUG', False)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# Render will set the correct host in the environment via ALLOWED_HOSTS.
+# If Render sets RENDER_EXTERNAL_HOSTNAME/RENDER_INTERNAL_HOSTNAME, include them automatically.
+configured_hosts = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+for render_host_var in ('RENDER_EXTERNAL_HOSTNAME', 'RENDER_INTERNAL_HOSTNAME'):
+    if os.getenv(render_host_var):
+        configured_hosts.append(os.getenv(render_host_var))
+
+ALLOWED_HOSTS = [
+    h.strip() for h in configured_hosts if h and h.strip()
+]
+
+# CSRF trusted origins (useful for Render domains in production).
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if host and host not in ('127.0.0.1', 'localhost')
+]
+
+# When running behind a proxy (e.g. Render), respect the X-Forwarded-Proto header
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -67,6 +98,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -101,10 +133,11 @@ ASGI_APPLICATION = 'KonnectAble.asgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        ssl_require=env_bool('DATABASE_SSL', False),
+    )
 }
 
 # point to the custom user model 
@@ -146,6 +179,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Include the project-level static folder so templates can load /static/css/* files
 STATICFILES_DIRS = [

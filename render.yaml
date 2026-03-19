@@ -1,0 +1,26 @@
+# Render configuration for KonnectAble (Django)
+# See https://render.com/docs/render-yaml for details.
+
+services:
+  - type: web
+    name: konnectable-website
+    env: python
+    plan: free
+    region: oregon
+    # Build on every deploy
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput"
+    # Use Daphne so WebSocket (Channels) works correctly
+    startCommand: "daphne -b 0.0.0.0 -p $PORT KonnectAble.asgi:application"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "konnectable-website.onrender.com"
+      - key: DATABASE_SSL
+        value: "True"
+
+# Optional: Add a managed PostgreSQL database and connect it via DATABASE_URL.
+# In the Render dashboard, create a new PostgreSQL service and attach it to this web service.
+# Render will populate DATABASE_URL automatically for your service.
