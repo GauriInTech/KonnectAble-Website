@@ -1,6 +1,7 @@
 Django==6.0
 channels==4.0
 asgiref>=3.0
+Pillow
 daphne
 
 gunicorn
