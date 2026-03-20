@@ -9,35 +9,40 @@ from django.shortcuts import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from posts.models import Post
+
 def profile_list(request):
+    """Show the logged-in user's supporters (followers) and supporting (following) lists."""
+
     my_profile = None
-    profiles = Profile.objects.none()
+    supporters = Profile.objects.none()
+    supporting = Profile.objects.none()
+
     if request.user.is_authenticated:
         my_profile, _ = Profile.objects.get_or_create(user=request.user)
 
-        # Show only other profiles that are connected to the current user
-        # i.e. profiles the user supports or that support the user
-        profiles = (my_profile.get_supporting() | my_profile.get_supporters()).distinct()
+        # Followers (supporters) and following (supporting)
+        supporters = my_profile.get_supporters()
+        supporting = my_profile.get_supporting()
 
-        # exclude self
-        profiles = profiles.exclude(user=request.user)
+        # Annotate for display (counts, follow state, badges)
+        for p in list(supporters) + list(supporting):
+            p.supports_count = p.supports_count()
+            p.supporters_count = p.supporters_count()
+            p.is_supported_by_me = p in supporting
+            # lightweight badges
+            try:
+                age_days = (timezone.now() - p.created_at).days
+            except Exception:
+                age_days = 9999
+            p.is_new = age_days < 7
+            p.is_top_supported = p.supporters_count > 10
 
-    # attach helpful attributes for template display
-    for p in profiles:
-        p.supports_count = p.supports_count()
-        p.supporters_count = p.supporters_count()
-        p.is_supported_by_me = False
-        # lightweight badges
-        try:
-            age_days = (timezone.now() - p.created_at).days
-        except Exception:
-            age_days = 9999
-        p.is_new = age_days < 7
-        p.is_top_supported = p.supporters_count > 10
-        if my_profile:
-            p.is_supported_by_me = p in my_profile.get_supporting()
-
-    return render(request, 'profiles/profile_list.html', {'profiles': profiles})
+    return render(request, 'profiles/profile_list.html', {
+        'my_profile': my_profile,
+        'supporters': supporters,
+        'supporting': supporting,
+    })
 
 
 def profile_detail(request, username):
@@ -60,6 +65,11 @@ def profile_detail(request, username):
     if request.user.is_authenticated and request.user != user:
         my_profile, _ = Profile.objects.get_or_create(user=request.user)
         profile.is_supported_by_me = profile in my_profile.get_supporting()
+
+    # fetch this user's posts for profile grid
+    user_posts = Post.objects.filter(user=user).order_by('-created_at')
+    post_count = user_posts.count()
+
     # attach jobPanel related profiles if they exist
     applicant_profile = None
     hiring_profile = None
@@ -74,6 +84,8 @@ def profile_detail(request, username):
 
     return render(request, 'profiles/profile_detail.html', {
         'profile': profile,
+        'posts': user_posts,
+        'post_count': post_count,
         'applicant_profile': applicant_profile,
         'hiring_profile': hiring_profile,
     })

@@ -1,869 +1,432 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>User Dashboard</title>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-		}
+{% extends "base.html" %}
+{% load static %}
 
-		body {
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			min-height: 100vh;
-			padding: 20px;
-			position: relative;
-		}
-
-		body::before {
-			content: '';
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: 
-				radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-				radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-			pointer-events: none;
-		}
-
-		h1 {
-			text-align: center;
-			color: white;
-			font-size: 2.5em;
-			margin-bottom: 10px;
-			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-			animation: fadeInDown 0.6s ease-out;
-		}
-
-		body > p {
-			text-align: center;
-			color: rgba(255, 255, 255, 0.9);
-			font-size: 1.1em;
-			margin-bottom: 20px;
-			animation: fadeIn 0.8s ease-out;
-		}
-
-		body > a {
-			display: block;
-			text-align: center;
-			color: white;
-			background: rgba(255, 255, 255, 0.2);
-			backdrop-filter: blur(10px);
-			padding: 12px 24px;
-			border-radius: 25px;
-			text-decoration: none;
-			max-width: 200px;
-			margin: 0 auto 30px;
-			font-weight: 600;
-			transition: all 0.3s ease;
-			border: 2px solid rgba(255, 255, 255, 0.3);
-			animation: fadeIn 1s ease-out;
-		}
-
-		body > a:hover {
-			background: rgba(255, 255, 255, 0.3);
-			transform: translateY(-2px);
-			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-		}
-
-  .container {
-    max-width: 650px;
-    margin: 20px auto;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Feed wrapper used inside dashboard to avoid nested .container sizing */
-  .feed-wrap {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Dashboard layout */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 22px;
-    max-width: 1100px;
-    margin: 20px auto;
-  }
-
-  .main-col {
-    min-width: 0;
-  }
-
-  .sidebar {
-    position: relative;
-  }
-
-  .sidebar .card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
-    border: 1px solid #f3e8ff;
-  }
-
-  .sidebar .card h3 {
-    margin-bottom: 8px;
-    color: #4b2cbf;
-    font-size: 16px;
-  }
-
-  .sidebar ul { list-style:none; padding-left:0; margin:0; }
-  .sidebar li { padding:8px 0; border-bottom:1px solid #f3eefb; }
-  .sidebar li:last-child { border-bottom:none; }
-
-		/* Search bar styles */
-		.search-wrap {
-			display: flex;
-			gap: 10px;
-			align-items: center;
-			margin-bottom: 18px;
-		}
-
-		.search-input {
-			flex: 1;
-			padding: 12px 16px;
-			border-radius: 999px;
-			border: 2px solid rgba(0,0,0,0.06);
-			background: linear-gradient(180deg, #fff, #fbfbff);
-			box-shadow: 0 6px 18px rgba(103, 80, 164, 0.06);
-			font-size: 15px;
-		}
-
-		.search-btn {
-			padding: 10px 18px;
-			border-radius: 999px;
-			border: none;
-			background: linear-gradient(135deg, #ff8a00 0%, #e52e71 100%);
-			color: white;
-			font-weight: 700;
-			cursor: pointer;
-			box-shadow: 0 6px 18px rgba(229, 46, 113, 0.18);
-		}
-
-		.suggestions-dropdown {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			background: white;
-			border-radius: 12px;
-			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-			max-height: 200px;
-			overflow-y: auto;
-			z-index: 1000;
-			margin-top: 5px;
-		}
-
-		.suggestion-item {
-			padding: 12px 16px;
-			cursor: pointer;
-			border-bottom: 1px solid #f0f0f0;
-			transition: background-color 0.2s ease;
-			display: flex;
-			align-items: center;
-			gap: 10px;
-		}
-
-		.suggestion-item:last-child {
-			border-bottom: none;
-		}
-
-		.suggestion-item:hover {
-			background-color: #f8f9fa;
-		}
-
-		.suggestion-avatar {
-			width: 30px;
-			height: 30px;
-			border-radius: 50%;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			font-weight: bold;
-			color: white;
-			font-size: 12px;
-		}
-
-		.suggestion-text {
-			flex: 1;
-		}
-
-		.suggestion-username {
-			font-weight: 600;
-			color: #333;
-		}
-
-		.suggestion-fullname {
-			font-size: 12px;
-			color: #666;
-		}
-
-		.create-post:hover {
-			transform: translateY(-4px);
-			box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-		}
-
-		.create-post-header {
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			font-weight: 600;
-			color: #333;
-			font-size: 16px;
-		}
-
-		form {
-			display: inline;
-		}
-
-  /* CREATE POST */
-  .create-post {
-    background: white;
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 8px 32px rgba(147, 112, 219, 0.15);
-    border: 2px solid transparent;
-    background-image: linear-gradient(white, white), linear-gradient(135deg, #a78bfa, #f472b6);
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-  }
-
-  .create-post-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
-  }
-
-  .create-post-header span {
-    color: #6b7280;
-    font-size: 15px;
-    font-weight: 500;
-  }
-
-  .avatar-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 18px;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-  }
-
-  .create-post textarea {
-    width: 100%;
-    border: 2px solid #e9d5ff;
-    border-radius: 16px;
-    padding: 16px;
-    font-size: 15px;
-    resize: none;
-    transition: all 0.3s ease;
-    background: #faf5ff;
-  }
-
-  .create-post textarea:focus {
-    outline: none;
-    border-color: #a78bfa;
-    background: white;
-    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.15);
-  }
-
-  .create-post input[type="file"] {
-    margin-top: 12px;
-    padding: 10px;
-    border: 2px dashed #d8b4fe;
-    border-radius: 12px;
-    width: 100%;
-    cursor: pointer;
-    background: #fdf4ff;
-    transition: all 0.3s ease;
-  }
-
-  .create-post input[type="file"]:hover {
-    border-color: #a78bfa;
-    background: #f3e8ff;
-  }
-
-  .main-btn {
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    color: white;
-    border: none;
-    padding: 12px 28px;
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
-  }
-
-  .main-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
-  }
-
-  .main-btn:active {
-    transform: translateY(0);
-  }
-
-  /* POST CARD */
-  .post-card {
-    background: white;
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
-    transition: all 0.3s ease;
-    border: 1px solid #f3e8ff;
-  }
-
-  .post-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(147, 112, 219, 0.18);
-  }
-
-  .post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .post-header span:first-child {
-    font-weight: 700;
-    color: #7c3aed;
-    font-size: 16px;
-  }
-
-  .post-time {
-    font-size: 13px;
-    color: #9ca3af;
-    background: #f5f3ff;
-    padding: 4px 12px;
-    border-radius: 20px;
-  }
-
-  .post-card p {
-    color: #374151;
-    line-height: 1.7;
-    font-size: 15px;
-  }
-
-  .post-card img {
-    max-width: 100%;
-    border-radius: 16px;
-    margin-top: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  /* POST ACTIONS */
-  .post-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid #f3e8ff;
-    flex-wrap: wrap;
-  }
-
-  .action-btn {
-    background: linear-gradient(135deg, #f5f3ff, #fce7f3);
-    border: none;
-    padding: 10px 18px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    color: #7c3aed;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .action-btn:hover {
-    background: linear-gradient(135deg, #ede9fe, #fbcfe8);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-  }
-
-  .like-btn {
-    background: linear-gradient(135deg, #dbeafe, #e0e7ff);
-    color: #3b82f6;
-  }
-
-  .like-btn:hover {
-    background: linear-gradient(135deg, #bfdbfe, #c7d2fe);
-  }
-
-  /* COMMENT FORM */
-  .comment-form {
-    margin-top: 18px;
-    padding: 18px;
-    background: linear-gradient(135deg, #faf5ff, #fdf2f8);
-    border-radius: 16px;
-    border: 1px solid #f3e8ff;
-  }
-
-  .comment-form textarea {
-    width: 100%;
-    border: 2px solid #e9d5ff;
-    border-radius: 12px;
-    padding: 14px;
-    font-size: 14px;
-    resize: none;
-    background: white;
-    transition: all 0.3s ease;
-  }
-
-  .comment-form textarea:focus {
-    outline: none;
-    border-color: #a78bfa;
-    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
-  }
-
-  /* COMMENTS */
-  .post-card > div[style*="background:#f9f9f9"] {
-    background: linear-gradient(135deg, #f5f3ff, #fdf4ff) !important;
-    border-radius: 14px !important;
-    padding: 14px !important;
-    margin-top: 12px !important;
-    border-left: 4px solid #c4b5fd !important;
-  }
-
-  .post-card > div[style*="background:#f9f9f9"] strong {
-    color: #7c3aed;
-  }
-
-  /* EMPTY STATE */
-  .container > p[style*="text-align:center"] {
-    background: white;
-    padding: 40px;
-    border-radius: 20px;
-    color: #9ca3af !important;
-    font-size: 16px;
-    box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
-  }
-
-		@keyframes fadeIn {
-			from {
-				opacity: 0;
-			}
-			to {
-				opacity: 1;
-			}
-		}
-
-		@keyframes fadeInDown {
-			from {
-				opacity: 0;
-				transform: translateY(-20px);
-			}
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
-		}
-
-		@keyframes slideInUp {
-			from {
-				opacity: 0;
-				transform: translateY(20px);
-			}
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
-		}
-
-		@keyframes slideIn {
-			from {
-				opacity: 0;
-				transform: translateX(-10px);
-			}
-			to {
-				opacity: 1;
-				transform: translateX(0);
-			}
-		}
-
-  /* RESPONSIVE */
-  @media (max-width: 640px) {
-    body {
-      padding: 12px;
+{% block head %}
+  <title>Dashboard – KonnectAble</title>
+  <style>
+    :root {
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(199, 210, 254, 0.8);
+      --accent: #7c3aed;
+      --accent-strong: #5b21b6;
+      --muted: #64748b;
+      --shadow-soft: 0 8px 30px rgba(15, 23, 42, 0.08);
+      --shadow-deep: 0 16px 40px rgba(15, 23, 42, 0.16);
     }
-    
-    .create-post,
-    .post-card {
-      padding: 18px;
-      border-radius: 16px;
-    }
-    
-    .post-actions {
-      justify-content: center;
-    }
-    
-    .action-btn {
-      flex: 1;
-      justify-content: center;
-      min-width: 100px;
-    }
-  }
 
-  /* Dashboard responsive: collapse to single column on smaller screens */
-  @media (max-width: 900px) {
+    .dashboard-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+      min-height: calc(100vh - 90px);
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .dashboard-title {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard-meta {
+      font-size: 0.95rem;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.5;
+    }
+
+
     .dashboard-grid {
-      grid-template-columns: 1fr;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 26px;
+      align-items: start;
     }
-    .sidebar {
-      order: 2;
-    }
+
     .main-col {
-      order: 1;
+      min-width: 0;
     }
-    .container {
-      max-width: 100%;
-      margin: 0 8px;
+
+    .sidebar {
+      position: relative;
     }
-  }
 
-		/* Cute loading animation for buttons */
-		.main-btn:disabled {
-			opacity: 0.7;
-			cursor: not-allowed;
-		}
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      padding: 20px;
+    }
 
-		/* Scrollbar styling */
-		::-webkit-scrollbar {
-			width: 10px;
-		}
+    .card h3 {
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      color: #1e293b;
+    }
 
-		::-webkit-scrollbar-track {
-			background: rgba(255, 255, 255, 0.1);
-		}
+    .card small {
+      color: var(--muted);
+    }
 
-		::-webkit-scrollbar-thumb {
-			background: rgba(255, 255, 255, 0.3);
-			border-radius: 10px;
-		}
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
 
-		::-webkit-scrollbar-thumb:hover {
-			background: rgba(255, 255, 255, 0.5);
-		}
+    .stat {
+      padding: 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(124, 58, 237, 0.04));
+      text-align: center;
+    }
 
-		.logout-btn:hover {
-			background: rgba(255, 255, 255, 0.3);
-			transform: translateY(-2px);
-			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-		}
-	</style>
-</head>
-<body>
-	<h1>Welcome {{username}}</h1>
-	<p>Have a Beautifull Day! </p>
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-{% if request.user.is_authenticated %}
-<div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
-	<a href="{% url 'profile_detail' request.user.username %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
-		My Profile
-	</a>
-  <a href="{% url 'job_index' %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
-    Jobs
-  </a>
-  <a href="{% url 'message:inbox' %}" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); width: 160px; text-align: center;height: 44px;">
-    Messages
-  </a>
-            <form method="post" action="{% url 'logout' %}" style="display: inline;">
-		{% csrf_token %}
-		<div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
-		<button type="submit" class="logout-btn" style="color: white; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); cursor: pointer; width: 160px; text-align: center;">
-			Logout
-		</button>
-		</div>
-	</form>
-</div>
+    .stat-value {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 4px;
+    }
 
-  <!-- Search users (full width above grid) -->
-    <form method="get" action="{% url 'accounts_home' %}" class="search-wrap" style="width:calc(100% - 120px); margin: 0 auto 18px; max-width:1100px; position: relative;">
-      <input type="search" name="q" class="search-input" value="{{ query }}" placeholder="Search users by name or username..." id="search-input">
-      <button type="submit" class="search-btn">Search</button>
-      <div id="suggestions" class="suggestions-dropdown" style="display: none;"></div>
-    </form>
+    .profile-card {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
 
-  <!-- Embedded posts feed -->
-  <div class="container dashboard-grid">
-    <main class="main-col">
+    .profile-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: white;
+      box-shadow: 0 6px 18px rgba(124, 58, 237, 0.2);
+    }
 
-		{% if search_results %}
-			<div style="margin-bottom:16px; background: rgba(255,255,255,0.9); padding:12px; border-radius:12px;">
-				<strong>Search results:</strong>
-				<ul style="margin-top:8px; list-style:none; padding-left:0;">
-					{% for user in search_results %}
-						<li style="padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04);">
-							<a href="{% url 'profile_detail' user.username %}" style="text-decoration:none; color:#333; font-weight:600;">{{ user.get_full_name|default:user.username }} ({{ user.username }})</a>
-            </li>
-          {% endfor %}
-        </ul>
+    .profile-meta h4 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #0f172a;
+    }
+
+    .profile-meta p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .profile-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .profile-actions a {
+      flex: 1;
+      text-align: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      background: rgba(255, 255, 255, 0.7);
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .profile-actions a:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-soft);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+
+
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .suggestion-item:hover {
+      background: rgba(124, 58, 237, 0.06);
+    }
+
+    .suggestion-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+    }
+
+    .suggestion-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .suggestion-username {
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .suggestion-fullname {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    @media (max-width: 1000px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .quick-actions {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .dashboard-wrap {
+        padding: 20px 16px 60px;
+      }
+
+      .dashboard-title {
+        font-size: 1.8rem;
+      }
+
+      .dashboard-meta {
+        font-size: 0.95rem;
+      }
+
+      .dashboard-grid {
+        gap: 18px;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="dashboard-wrap">
+    <header class="dashboard-header">
+      <div>
+        <h1 class="dashboard-title">Hello, {{ request.user.first_name|default:request.user.username }} 👋</h1>
       </div>
-      {% endif %}
-      <!-- Create-post form posts to the posts app so layout stays consistent -->
-      <div class="feed-wrap">
-        <div class="create-post">
-          <div class="create-post-header">
-            <div>
-              {% if profile and profile.profile_image %}
-                <img src="{{ profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
-              {% else %}
-                <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
-              {% endif %}
+
+
+    </header>
+
+    {% if request.user.is_authenticated %}
+      <div class="dashboard-grid">
+        <main class="main-col">
+          {% if search_results %}
+            <div class="card" style="margin-bottom: 20px;">
+              <h3>Search results</h3>
+              <ul style="list-style:none; margin:0; padding:0;">
+                {% for user in search_results %}
+                  <li style="padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.25);">
+                    <a href="{% url 'profile_detail' user.username %}" style="text-decoration:none; color:#0f172a; font-weight:600;">
+                      {{ user.get_full_name|default:user.username }} <span style="color: var(--muted);">(@{{ user.username }})</span>
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
             </div>
-            <span>Start a post</span>
-          </div>
-          <form method="post" action="{% url 'posts' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <textarea name="content" rows="3" placeholder="Share your thoughts..."></textarea>
-            <input type="file" name="image" accept="image/*">
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
-              <button type="submit" class="main-btn">Post</button>
+          {% endif %}
+
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+              <div>
+                <h3>Share an update</h3>
+                <small style="color: var(--muted);">Your network will see this in their feed.</small>
+              </div>
             </div>
-          </form>
-        </div>
-      </div>
-      <!-- POSTS FEED -->
-      <div style="margin-top:20px;">
-        {% if posts %}
-          {% for post in posts %}
-            <div class="post-card">
-              <div class="post-header">
-                <span>{{ post.user.username }}</span>
-                <span class="post-time">{{ post.created_at|timesince }} ago</span>
-              </div>
 
-              <div style="margin:15px 0;">
-                <p>{{ post.content }}</p>
-                {% if post.image %}
-                  <div style="margin-top:10px;"><img src="{{ post.image.url }}" alt="Post image" style="max-width:100%; border-radius:8px;"></div>
-                {% endif %}
-              </div>
+            <form method="post" action="{% url 'posts' %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <textarea name="content" rows="4" placeholder="What’s on your mind?" style="width:100%; border:1px solid rgba(148, 163, 184, 0.35); border-radius: 14px; padding: 14px; resize:none; font-size: 0.95rem; min-height: 140px; background: rgba(255, 255, 255, 0.85);"></textarea>
 
-              <div class="post-actions">
-                <form method="post" action="{% url 'like_post' post.id %}">
-                  {% csrf_token %}
-                  <button type="submit" class="action-btn like-btn">👍 Like ({{ post.like_set.count }})</button>
-                </form>
-
-                <a href="#comment-form-{{ post.id }}" class="action-btn" style="text-decoration:none;">💬 Comment</a>
-
-                {% if post.user == request.user %}
-                  <form method="post" action="{% url 'delete_post' post.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn" onclick="return confirm('Delete this post?')" style="color:#e74c3c;">🗑️ Delete</button>
-                  </form>
-                {% endif %}
-              </div>
-
-              <div id="comment-form-{{ post.id }}" class="comment-form">
-                <form method="post" action="{% url 'add_comment' post.id %}">
-                  {% csrf_token %}
-                  <textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%;"></textarea>
-                  <button type="submit" class="main-btn" style="margin-top:8px;">Comment</button>
-                </form>
-              </div>
-
-              {% for comment in post.comments.all %}
-                <div style="margin-top:10px; padding:10px; background:#f9f9f9; border-radius:6px;">
-                  <strong>{{ comment.user.username }}</strong>
-                  <span style="font-size:12px; color:#666;">{{ comment.created_at|timesince }} ago</span>
-                  <p style="margin:5px 0 0 0;">{{ comment.text }}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top: 14px;">
+                <div style="flex:1; min-width: 180px;">
+                  <input type="file" name="image" accept="image/*" style="width:100%; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.4); background: rgba(255,255,255,0.9); cursor:pointer;" />
                 </div>
-              {% endfor %}
+                <button type="submit" class="main-btn" style="flex-shrink:0;">Post</button>
+              </div>
+            </form>
+          </div>
+
+          {% if posts %}
+            {% for post in posts %}
+              <div class="card" style="margin-bottom: 18px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom: 14px;">
+                  <div>
+                    <div style="font-weight:700; color:#0f172a;">{{ post.user.username }}</div>
+                    <small style="color: var(--muted);">{{ post.created_at|timesince }} ago</small>
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--muted);">{{ post.like_set.count }} ❤️</div>
+                </div>
+
+                <p style="color:#1e293b; line-height:1.6; margin:0 0 14px;">{{ post.content }}</p>
+
+                {% if post.image %}
+                  <img src="{{ post.image.url }}" alt="Post image" style="width:100%; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);" />
+                {% endif %}
+
+                <div class="post-actions">
+                  <form method="post" action="{% url 'like_post' post.id %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn like-btn">👍 Like</button>
+                  </form>
+                  <a href="#comment-form-{{ post.id }}" class="action-btn">💬 Comment</a>
+                  {% if post.user == request.user %}
+                    <form method="post" action="{% url 'delete_post' post.id %}" style="margin:0;">
+                      {% csrf_token %}
+                      <button type="submit" class="action-btn" style="color:#e11d48;">🗑️ Delete</button>
+                    </form>
+                  {% endif %}
+                </div>
+
+                <div id="comment-form-{{ post.id }}" class="comment-form">
+                  <form method="post" action="{% url 'add_comment' post.id %}">
+                    {% csrf_token %}
+                    <textarea name="text" rows="2" placeholder="Write a comment..." style="width:100%; border-radius:12px; border:1px solid rgba(148, 163, 184, 0.35); padding:12px; background:white;"></textarea>
+                    <button type="submit" class="main-btn" style="margin-top:10px;">Comment</button>
+                  </form>
+                </div>
+
+                {% for comment in post.comments.all %}
+                  <div style="margin-top:12px; padding:14px; background: rgba(243, 244, 255, 0.8); border-radius: 14px;">
+                    <div style="display:flex; justify-content:space-between; gap:12px;">
+                      <strong style="color:#0f172a;">{{ comment.user.username }}</strong>
+                      <span style="font-size:0.8rem; color: var(--muted);">{{ comment.created_at|timesince }} ago</span>
+                    </div>
+                    <p style="margin:10px 0 0; color:#334155;">{{ comment.text }}</p>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="card" style="text-align:center;">
+              <p style="margin:0; color: var(--muted);">No posts yet — be the first to share something!</p>
             </div>
-          {% endfor %}
-        {% else %}
-          <p style="text-align:center; color:#666;">No posts yet. Create the first one!</p>
-        {% endif %}
+          {% endif %}
+        </main>
+
+        <aside class="sidebar">
+          <div class="card">
+            <div class="profile-card">
+              <div class="profile-avatar">
+                {% if profile and profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="{{ request.user.username }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;" />
+                {% else %}
+                  {{ request.user.username|first|upper }}
+                {% endif %}
+              </div>
+              <div class="profile-meta">
+                <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+                {% if profile and profile.headline %}
+                  <p>{{ profile.headline }}</p>
+                {% endif %}
+                {% if profile and profile.location %}
+                  <p>{{ profile.location }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <a href="{% url 'profile_detail' request.user.username %}">View Profile</a>
+              <a href="{% url 'profile_detail' request.user.username %}">Edit</a>
+            </div>
+
+            <div class="stat-grid" style="margin-top: 18px;">
+              <div class="stat">
+                <div class="stat-label">Supporters</div>
+                <div class="stat-value">{{ supporters_count }}</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Supporting</div>
+                <div class="stat-value">{{ supporting_count }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>My Applications</h3>
+            {% if my_applications %}
+              <ul style="list-style:none; margin:0; padding:0;">
+                {% for app in my_applications %}
+                  <li style="padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.25);">
+                    <div style="font-weight: 600;">{{ app.job.title }}</div>
+                    <small style="color: var(--muted);">Status: {{ app.status }}</small>
+                  </li>
+                {% endfor %}
+              </ul>
+              <div style="margin-top: 10px; text-align: right;"><a href="{% url 'job_index' %}">View all</a></div>
+            {% else %}
+              <p style="color: var(--muted);">No recent applications.</p>
+            {% endif %}
+          </div>
+
+          <div class="card">
+            <h3>Recommended Jobs</h3>
+            {% if recommended_jobs %}
+              <ul style="list-style:none; margin:0; padding:0;">
+                {% for job in recommended_jobs %}
+                  <li style="padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.25);">
+                    <div style="font-weight: 600;">{{ job.title }}</div>
+                    <small style="color: var(--muted);">{{ job.company }}</small>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p style="color: var(--muted);">No recommendations yet.</p>
+            {% endif %}
+          </div>
+        </aside>
       </div>
+    {% else %}
+      <div class="card" style="text-align:center;">
+        <p>Please <a href="{% url 'login' %}">log in</a> to view your dashboard.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
 
-      </main>
+{% block scripts %}{% endblock %}
 
-      <aside class="sidebar">
-        <div class="card">
-          <div style="display:flex; gap:12px; align-items:center;">
-            <div>
-              {% if profile and profile.profile_image %}
-                <img src="{{ profile.profile_image.url }}" alt="{{ request.user.username }}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;font-size:20px;">
-              {% else %}
-                <div class="avatar-circle" style="width:56px;height:56px;font-size:20px;">{{ request.user.username|first|upper }}</div>
-              {% endif %}
-            </div>
-            <div>
-              <h3>{{ request.user.get_full_name|default:request.user.username }}</h3>
-              {% if profile and profile.headline %}
-                <div style="font-size:13px;color:#6b7280;">{{ profile.headline }}</div>
-              {% endif %}
-              {% if profile and profile.location %}
-                <div style="font-size:12px;color:#9ca3af;">{{ profile.location }}</div>
-              {% endif %}
-            </div>
-          </div>
-          <div style="display:flex; gap:8px; margin-top:12px;">
-            <a href="{% url 'profile_detail' request.user.username %}" class="action-btn" style="flex:1; text-align:center; padding:8px 10px;">View Profile</a>
-            <a href="{% url 'profile_detail' request.user.username %}" class="action-btn" style="flex:1; text-align:center; padding:8px 10px;">Edit</a>
-          </div>
-          <div style="display:flex; gap:10px; margin-top:12px;">
-            <div style="flex:1; text-align:center;">
-              <div style="font-weight:700; color:#7c3aed;">{{ supporters_count }}</div>
-              <div style="font-size:12px; color:#6b7280;">Supporters</div>
-            </div>
-            <div style="flex:1; text-align:center;">
-              <div style="font-weight:700; color:#7c3aed;">{{ supporting_count }}</div>
-              <div style="font-size:12px; color:#6b7280;">Supporting</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>My Applications ({{ applications_count }})</h3>
-          {% if my_applications %}
-            <ul>
-              {% for app in my_applications %}
-                <li>
-                  <strong style="display:block">{{ app.job.title }}</strong>
-                  <small style="color:#6b7280">Status: {{ app.status }}</small>
-                </li>
-              {% endfor %}
-            </ul>
-            <div style="margin-top:8px; text-align:right;"><a href="{% url 'job_index' %}">View all</a></div>
-          {% else %}
-            <div style="color:#9ca3af;">No recent applications</div>
-          {% endif %}
-        </div>
-
-        <div class="card">
-          <h3>Recommended Jobs</h3>
-          {% if recommended_jobs %}
-            <ul>
-              {% for job in recommended_jobs %}
-                <li>
-                  <strong style="display:block">{{ job.title }}</strong>
-                  <small style="color:#6b7280">{{ job.company }}</small>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <div style="color:#9ca3af;">No recommendations yet</div>
-          {% endif %}
-        </div>
-      </aside>
-
-    </div>
-
-{% else %}
-
-
-<p><a href="{% url 'login' %}">Log in</a> to view your profile.</p>
-{% endif %}
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const tokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
-    const csrftoken = tokenEl ? tokenEl.value : '';
-
-    // Autocomplete functionality
-    const searchInput = document.getElementById('search-input');
-    const suggestionsDiv = document.getElementById('suggestions');
-    let debounceTimer;
-
-    searchInput.addEventListener('input', function() {
-        const query = this.value.trim();
-        clearTimeout(debounceTimer);
-
-        if (query.length === 0) {
-            suggestionsDiv.style.display = 'none';
-            return;
-        }
-
-        debounceTimer = setTimeout(() => {
-            fetch(`{% url 'user_search_api' %}?q=${encodeURIComponent(query)}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                suggestionsDiv.innerHTML = '';
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach(user => {
-                      const item = document.createElement('div');
-                      item.className = 'suggestion-item';
-
-                      // avatar
-                      const avatar = document.createElement('div');
-                      avatar.className = 'suggestion-avatar';
-                      if (user.avatar_url) {
-                        const img = document.createElement('img');
-                        img.src = user.avatar_url;
-                        img.alt = user.username;
-                        img.style.width = '30px'; img.style.height = '30px'; img.style.borderRadius = '50%'; img.style.objectFit = 'cover';
-                        avatar.appendChild(img);
-                      } else {
-                        avatar.textContent = user.username.charAt(0).toUpperCase();
-                      }
-
-                      const text = document.createElement('div');
-                      text.className = 'suggestion-text';
-                      text.innerHTML = `
-                        <div class="suggestion-username">${user.username}</div>
-                        <div class="suggestion-fullname">${user.full_name}</div>
-                      `;
-
-                      item.appendChild(avatar);
-                      item.appendChild(text);
-
-                      item.addEventListener('click', function() {
-                        window.location.href = user.profile_url;
-                      });
-                      suggestionsDiv.appendChild(item);
-                    });
-                    suggestionsDiv.style.display = 'block';
-                } else {
-                    suggestionsDiv.style.display = 'none';
-                }
-            })
-            .catch(err => console.error('Error fetching suggestions:', err));
-        }, 300); // 300ms debounce
-    });
-
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
-            suggestionsDiv.style.display = 'none';
-        }
-    });
-
-    // Hide suggestions on form submit
-    document.querySelector('.search-wrap form').addEventListener('submit', function() {
-        suggestionsDiv.style.display = 'none';
-    });
-});
-</script>
-</body>
-</html>

@@ -172,13 +172,13 @@
 .connection-status { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; background:linear-gradient(135deg,#dcfce7 0%,#d1fae5 100%); color:#166534; border-radius:2rem; font-size:0.875rem; font-weight:600; margin-bottom:1rem; }
 
 /* Small profile list/card grid */
-.profiles-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;padding:1rem}
-.profile-card.small{background:var(--konnect-card);border-radius:14px;padding:14px;box-shadow:0 8px 30px -12px rgba(0,0,0,0.12);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.profiles-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;padding:1rem}
+.profile-card.small{background:var(--konnect-card);border-radius:14px;padding:14px;box-shadow:0 8px 30px -12px rgba(0,0,0,0.12);display:flex;flex-direction:column;gap:8px;align-items:flex-start;max-width:100%}
 .profile-top{display:flex;align-items:center;gap:12px;width:100%}
 .profile-avatar{width:56px;height:56px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--konnect-primary),#8b5cf6);color:white;font-weight:700;font-size:18px}
 .profile-meta{flex:1}
 .profile-username.small{font-weight:800;color:var(--konnect-text);margin:0}
-.profile-stats{font-size:0.9rem;color:var(--konnect-text-muted);margin-top:6px}
+.profile-stats{font-size:0.9rem;color:var(--konnect-text-muted);margin-top:6px;line-height:1.25}
 .profile-preview{font-size:0.85rem;color:var(--konnect-text-muted);margin-top:6px}
 .btn-ghost{background:transparent;color:var(--konnect-primary);border:1px solid rgba(99,102,241,0.12);padding:8px 12px;border-radius:10px;font-weight:700}
 
@@ -197,6 +197,232 @@
 .badge { display:inline-block; padding:0.15rem 0.4rem; border-radius:0.5rem; font-size:0.7rem; font-weight:700; color:#fff; margin-left:0.35rem; }
 .badge-new { background: #06b6d4; }
 .badge-top { background: #ef4444; }
+
+/* Profile detail enhancements */
+.profile-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: center;
+  text-align: center;
+}
+
+.profile-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  align-items: center;
+}
+
+.profile-realname {
+  font-size: 1rem;
+  color: var(--konnect-text-muted);
+  font-weight: 500;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--konnect-text-muted);
+}
+
+.profile-stats div,
+.profile-stats a {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-stats strong {
+  font-size: 1.1rem;
+  color: var(--konnect-text);
+}
+
+.profile-about {
+  margin-top: 1.25rem;
+  text-align: center;
+}
+
+.profile-subtitle {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  color: var(--konnect-text);
+}
+
+.profile-details {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--konnect-text-muted);
+}
+
+.profile-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-detail a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.profile-posts {
+  margin-top: 2rem;
+}
+
+.posts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.posts-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--konnect-text);
+}
+
+.posts-count {
+  color: var(--konnect-text-muted);
+  font-size: 0.95rem;
+}
+
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.post-tile {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(243, 244, 255, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.post-tile:hover img {
+  transform: scale(1.05);
+}
+
+.post-text {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--konnect-text);
+  text-align: center;
+}
+
+.post-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.6rem 0.75rem;
+  background: rgba(15, 23, 42, 0.6);
+  color: white;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.post-tile:hover .post-overlay {
+  opacity: 1;
+}
+
+.empty-state {
+  padding: 1.5rem;
+  background: rgba(243, 244, 255, 0.65);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: var(--konnect-text-muted);
+  text-align: center;
+}
+
+.profile-connections {
+  margin-top: 2rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.connection-block {
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.25rem;
+  padding: 1rem;
+}
+
+.connection-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--konnect-text);
+}
+
+.connection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.connection-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  text-decoration: none;
+}
+
+.connection-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.connection-initial {
+  font-weight: 700;
+  color: var(--konnect-text);
+}
+
+.connection-more {
+  font-size: 0.85rem;
+  color: var(--konnect-primary);
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  text-decoration: none;
+}
 
 /* Utility: screen-reader only text */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

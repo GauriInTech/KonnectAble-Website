@@ -24,7 +24,7 @@ def posts_list(request):
         return redirect('accounts_home')
 
     # For GET, show the posts only on the dashboard; redirect here
-    return redirect('UserDashboard')
+    return redirect('accounts_home')
 
 
 @login_required

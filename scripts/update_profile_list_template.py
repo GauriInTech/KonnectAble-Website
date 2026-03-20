@@ -1,4 +1,8 @@
-{% extends "base.html" %}
+from pathlib import Path
+
+path = Path(__file__).resolve().parents[1] / 'profiles' / 'templates' / 'profiles' / 'profile_list.html'
+
+new_content = '''{% extends "base.html" %}
 {% load static %}
 
 {% block content %}
@@ -21,7 +25,7 @@
         {% if supporters %}
           <div class="profiles-container" role="list" aria-label="Supporters">
             {% for profile in supporters %}
-              <div class="profile-card small" role="listitem">
+              <div class="profile-card" role="listitem">
                 <div class="profile-top">
                   <div class="profile-avatar">
                     {% if profile.profile_image %}
@@ -63,7 +67,7 @@
         {% if supporting %}
           <div class="profiles-container" role="list" aria-label="Supporting">
             {% for profile in supporting %}
-              <div class="profile-card small" role="listitem">
+              <div class="profile-card" role="listitem">
                 <div class="profile-top">
                   <div class="profile-avatar">
                     {% if profile.profile_image %}
@@ -100,3 +104,7 @@
   {% endif %}
 </div>
 {% endblock %}
+'''
+
+path.write_text(new_content, encoding='utf-8')
+print('Wrote profile_list.html')

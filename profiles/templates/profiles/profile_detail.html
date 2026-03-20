@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block head %}
+  <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/profile.css' %}">
 
 <div class="profile-container">
   <div class="profile-card">
@@ -20,34 +23,108 @@
     </div>
     
     <div class="profile-body">
-      
-      
-      <h1 class="profile-username">
-        {{ profile.user.username }}
-        <span class="verified-badge">✓</span>
-      </h1>
-      
-      <p class="profile-bio">{{ profile.bio }}</p>
-      
-      <div class="profile-actions">
-        {% if request.user == profile.user %}
-          <a href="{% url 'profile_update' %}" class="btn btn-primary">
-            ✏️ Edit Profile
-          </a>
-          
-        {% elif request.user.is_authenticated %}
-          <form method="post" action="{% url 'toggle_support' profile.user.username %}" style="display:inline">
-            {% csrf_token %}
-            {% if profile.is_supported_by_me %}
-              <button type="submit" class="btn btn-primary">Un-support</button>
-            {% else %}
-              <button type="submit" class="btn btn-primary">Support</button>
+      <div class="profile-top">
+        <div class="profile-meta">
+          <div class="profile-name-row">
+            <h1 class="profile-username">
+              {{ profile.user.username }}
+              {% if profile.user.get_full_name %}
+                <span class="profile-realname">{{ profile.user.get_full_name }}</span>
+              {% endif %}
+              <span class="verified-badge">✓</span>
+            </h1>
+
+            <div class="profile-actions">
+              {% if request.user == profile.user %}
+                <a href="{% url 'profile_update' %}" class="btn btn-primary">
+                  ✏️ Edit Profile
+                </a>
+              {% elif request.user.is_authenticated %}
+                <form method="post" action="{% url 'toggle_support' profile.user.username %}" style="display:inline">
+                  {% csrf_token %}
+                  {% if profile.is_supported_by_me %}
+                    <button type="submit" class="btn btn-primary">Un-support</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-primary">Support</button>
+                  {% endif %}
+                </form>
+                <a href="{% url 'message:chat_with_user' profile.user.pk %}" class="btn btn-secondary">💬 Message</a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="profile-stats">
+            <div>
+              <strong>{{ post_count }}</strong>
+              <span>Posts</span>
+            </div>
+            <div>
+              <a href="{% url 'supporters_list' profile.user.username %}">
+                <strong>{{ profile.supporters_count }}</strong>
+                <span>Supporters</span>
+              </a>
+            </div>
+            <div>
+              <a href="{% url 'supporting_list' profile.user.username %}">
+                <strong>{{ profile.supports_count }}</strong>
+                <span>Supporting</span>
+              </a>
+            </div>
+          </div>
+
+          {% if profile.bio or profile.headline or profile.location or profile.portfolio_url %}
+            <div class="profile-about">
+              {% if profile.bio %}
+                <p class="profile-bio">{{ profile.bio }}</p>
+              {% endif %}
+              {% if profile.headline %}
+                <p class="profile-subtitle">{{ profile.headline }}</p>
+              {% endif %}
+              <div class="profile-details">
+                {% if profile.location %}
+                  <span class="profile-detail"><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
+                {% endif %}
+                {% if profile.portfolio_url %}
+                  <span class="profile-detail"><i class="fas fa-link"></i> <a href="{{ profile.portfolio_url }}" target="_blank">Portfolio</a></span>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="profile-posts">
+        <div class="posts-header">
+          <h2>Posts</h2>
+          <span class="posts-count">{{ post_count }} total</span>
+        </div>
+
+        {% if posts %}
+          <div class="posts-grid">
+            {% for post in posts %}
+              <div class="post-tile">
+                {% if post.image %}
+                  <img src="{{ post.image.url }}" alt="Post image" loading="lazy" />
+                {% else %}
+                  <div class="post-text">{{ post.content|truncatechars:100 }}</div>
+                {% endif %}
+                <div class="post-overlay">
+                  <span>❤️ {{ post.like_set.count }}</span>
+                  <span>💬 {{ post.comments.count }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <p>This user hasn’t shared any posts yet.</p>
+            {% if request.user == profile.user %}
+              <p><a href="{% url 'accounts_home' %}">Share your first update</a> and it will show up here.</p>
             {% endif %}
-          </form>
-          <a href="{% url 'message:chat_with_user' profile.user.pk %}" class="btn btn-primary" style="margin-left:8px;">💬 Message</a>
+          </div>
         {% endif %}
       </div>
-      
+
       {% comment %} Applicant / Hiring partner details from jobPanel {% endcomment %}
       {% if applicant_profile %}
         <hr style="margin:18px 0;">

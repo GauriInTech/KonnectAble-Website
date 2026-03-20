@@ -54,7 +54,7 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_bool('DEBUG', False)
+DEBUG = env_bool('DEBUG', True)
 
 # Render will set the correct host in the environment via ALLOWED_HOSTS.
 # If Render sets RENDER_EXTERNAL_HOSTNAME/RENDER_INTERNAL_HOSTNAME, include them automatically.
@@ -178,7 +178,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

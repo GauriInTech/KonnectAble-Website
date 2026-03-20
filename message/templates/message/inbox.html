@@ -3,40 +3,709 @@
 {% load static %}
 
 {% block head %}
-  <title>Inbox</title>
+  <title>Messages - KonnectAble</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="{% static 'css/chat.css' %}">
+  <style>
+    .inbox-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .inbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    
+    .inbox-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    
+    .create-group-btn {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .create-group-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+    
+    .conversations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .conversation-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .conversation-item:hover {
+      border-color: #7c3aed;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+      transform: translateX(4px);
+    }
+    
+    .conv-avatar-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+    
+    .conv-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      overflow: hidden;
+      font-size: 16px;
+    }
+    
+    .conv-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .online-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2px solid white;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      box-shadow: 0 0 0 1px #10b981;
+    }
+    
+    .online-indicator.offline {
+      background: #d1d5db;
+    }
+    
+    .conv-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .conv-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    
+    .conv-name {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 14px;
+    }
+    
+    .conv-time {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    
+    .conv-preview {
+      font-size: 13px;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .conv-preview.unread {
+      color: #1f2937;
+      font-weight: 500;
+    }
+    
+    .unread-badge {
+      background: #7c3aed;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #9ca3af;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .no-results {
+      padding: 24px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    
+    @media (max-width: 700px) {
+      .inbox-container {
+        padding: 12px;
+      }
+      
+      .inbox-title {
+        font-size: 24px;
+      }
+    }
+    
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .close-btn:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .members-section {
+      margin-bottom: 20px;
+    }
+    
+    .members-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .member-item:hover {
+      background: #f9fafb;
+    }
+    
+    .member-item.selected {
+      background: #f3e8ff;
+      border: 1px solid #c4b5fd;
+    }
+    
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .member-info h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    
+    .member-info p {
+      margin: 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    
+    .selected-members {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .selected-member {
+      background: #7c3aed;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .remove-member {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-  <div class="inbox-wrap">
-    <h2>Your Conversations</h2>
-    <div class="card">
+  <div class="inbox-container">
+    <div class="inbox-header">
+      <h1 class="inbox-title">Messages</h1>
+      <button class="create-group-btn" onclick="openCreateGroupModal()">
+        <span>+</span>
+        Create Group
+      </button>
+    </div>
+    
     {% if conversation_items %}
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="conversations-list">
       {% for item in conversation_items %}
-        <a class="conv" href="{% if item.other %}{% url 'message:chat_with_user' item.other.pk %}{% else %}#{% endif %}">
-          <div class="avatar">
-            {% if item.other and item.other.profile and item.other.profile.profile_image %}
-              <img src="{{ item.other.profile.profile_image.url }}" alt="{{ item.other.username }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">
-            {% else %}
-              {% if item.other %}{{ item.other.username|first|upper }}{% else %}G{% endif %}
+        <a class="conversation-item" href="{% if item.is_group %}{% url 'message:chat_group' item.conversation.pk %}{% else %}{% url 'message:chat_with_user' item.other.pk %}{% endif %}">
+          <div class="conv-avatar-wrapper">
+            <div class="conv-avatar">
+              {% if item.is_group %}
+                {% if item.avatar_url %}
+                  <img src="{{ item.avatar_url }}" alt="{{ item.group_name }}">
+                {% else %}
+                  👥
+                {% endif %}
+              {% elif item.other and item.other.profile and item.other.profile.profile_image %}
+                <img src="{{ item.other.profile.profile_image.url }}" alt="{{ item.other.username }}">
+              {% else %}
+                {% if item.other %}{{ item.other.username|first|upper }}{% else %}G{% endif %}
+              {% endif %}
+            </div>
+            {% if not item.is_group %}
+              {% if item.is_online %}
+                <div class="online-indicator"></div>
+              {% else %}
+                <div class="online-indicator offline"></div>
+              {% endif %}
             {% endif %}
           </div>
-          <div class="meta">
-            <div style="display:flex;flex-direction:column">
-              <div class="name">{% if item.other %}{{ item.other.get_full_name|default:item.other.username }}{% else %}Group conversation{% endif %}</div>
-              <div style="font-size:13px;color:#6b7280">{% if item.other %}@{{ item.other.username }}{% else %}{{ item.conversation.participants.count }} participants{% endif %}</div>
+          
+          <div class="conv-content">
+            <div class="conv-header">
+              <div class="conv-name">
+                {% if item.is_group %}
+                  {{ item.group_name }}
+                {% else %}
+                  {{ item.other.get_full_name|default:item.other.username }}
+                {% endif %}
+              </div>
+              {% if item.last_message %}
+                <div class="conv-time" title="{{ item.last_message.created_at }}">
+                  {% load tz %}
+                  {% now "M d, H:i" as today %}
+                  {% if item.last_message.created_at|date:"Y-m-d" == today|date:"Y-m-d" %}
+                    {{ item.last_message.created_at|date:"H:i" }}
+                  {% elif item.last_message.created_at|date:"Y-m" == today|date:"Y-m" %}
+                    {{ item.last_message.created_at|date:"M d" }}
+                  {% else %}
+                    {{ item.last_message.created_at|date:"M d, Y" }}
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
-            <div style="font-size:13px;color:#6b7280">Open →</div>
+            <div class="conv-preview {% if item.unread_count %}unread{% endif %}">
+              {{ item.last_message_preview }}
+            </div>
           </div>
+          
+          {% if item.unread_count %}
+            <div class="unread-badge">{{ item.unread_count }}</div>
+          {% endif %}
         </a>
       {% endfor %}
       </div>
     {% else %}
-      <div class="no-conv">No conversations yet. Visit profiles to start a chat.</div>
+      {% if search_query %}
+        <div class="no-results">
+          <div class="empty-state-icon">🔍</div>
+          <p>No conversations found matching "{{ search_query }}"</p>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h3 style="margin-bottom: 8px; color: #6b7280;">No conversations yet</h3>
+          <p>Start a conversation by visiting a profile or searching for users</p>
+        </div>
+      {% endif %}
     {% endif %}
+  </div>
+
+  <!-- Create Group Modal -->
+  <div id="createGroupModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Create New Group</h2>
+        <button class="close-btn" onclick="closeCreateGroupModal()">&times;</button>
+      </div>
+      
+      <form id="createGroupForm" onsubmit="createGroup(event)">
+        <div class="form-group">
+          <label class="form-label" for="groupName">Group Name *</label>
+          <input type="text" id="groupName" name="name" class="form-input" placeholder="Enter group name" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="groupDescription">Description (Optional)</label>
+          <textarea id="groupDescription" name="description" class="form-input form-textarea" placeholder="Describe your group"></textarea>
+        </div>
+        
+        <div class="members-section">
+          <label class="form-label">Add Members</label>
+          <input type="text" id="memberSearch" class="form-input" placeholder="Search users..." oninput="loadUsers()">
+          <div class="members-list" id="membersList">
+            <!-- Members will be loaded here -->
+          </div>
+          
+          <div class="selected-members" id="selectedMembers">
+            <!-- Selected members will appear here -->
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
+          <button type="submit" class="btn-primary" id="createGroupBtn">Create Group</button>
+        </div>
+      </form>
     </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedMembers = new Set();
+  let allUsers = [];
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  function openCreateGroupModal() {
+    document.getElementById('createGroupModal').classList.add('show');
+    document.getElementById('groupName').focus();
+    loadUsers();
+  }
+
+  function closeCreateGroupModal() {
+    document.getElementById('createGroupModal').classList.remove('show');
+    document.getElementById('createGroupForm').reset();
+    selectedMembers.clear();
+    updateSelectedMembersDisplay();
+  }
+
+  async function loadUsers() {
+    try {
+      const searchQuery = document.getElementById('memberSearch')?.value || '';
+      const response = await fetch(`/messages/api/users/for-group/?q=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      
+      allUsers = data.users || [];
+      displayUsers(allUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      // Fallback to empty list
+      allUsers = [];
+      displayUsers([]);
+    }
+  }
+
+  function displayUsers(users) {
+    const membersList = document.getElementById('membersList');
+    membersList.innerHTML = '';
+    
+    users.forEach(user => {
+      const memberItem = document.createElement('div');
+      memberItem.className = `member-item ${selectedMembers.has(user.id) ? 'selected' : ''}`;
+      memberItem.onclick = () => toggleMemberSelection(user.id);
+      
+      memberItem.innerHTML = `
+        <div class="member-avatar">
+          ${user.avatar ? `<img src="${user.avatar}" alt="${user.username}">` : user.username.charAt(0).toUpperCase()}
+        </div>
+        <div class="member-info">
+          <h4>${user.full_name || user.username}</h4>
+          <p>@${user.username}</p>
+        </div>
+      `;
+      
+      membersList.appendChild(memberItem);
+    });
+  }
+
+  function toggleMemberSelection(userId) {
+    if (selectedMembers.has(userId)) {
+      selectedMembers.delete(userId);
+    } else {
+      selectedMembers.add(userId);
+    }
+    updateSelectedMembersDisplay();
+    displayUsers(allUsers);
+  }
+
+  function updateSelectedMembersDisplay() {
+    const selectedContainer = document.getElementById('selectedMembers');
+    selectedContainer.innerHTML = '';
+    
+    selectedMembers.forEach(userId => {
+      const user = allUsers.find(u => u.id === userId);
+      if (user) {
+        const selectedItem = document.createElement('div');
+        selectedItem.className = 'selected-member';
+        selectedItem.innerHTML = `
+          ${user.full_name || user.username}
+          <span class="remove-member" onclick="removeMember(${userId})">&times;</span>
+        `;
+        selectedContainer.appendChild(selectedItem);
+      }
+    });
+  }
+
+  function removeMember(userId) {
+    selectedMembers.delete(userId);
+    updateSelectedMembersDisplay();
+    displayUsers(allUsers);
+  }
+
+  async function createGroup(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('groupName').value.trim();
+    const description = document.getElementById('groupDescription').value.trim();
+    
+    if (!name) {
+      alert('Please enter a group name');
+      return;
+    }
+    
+    if (selectedMembers.size === 0) {
+      alert('Please select at least one member');
+      return;
+    }
+    
+    const createBtn = document.getElementById('createGroupBtn');
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating...';
+    
+    try {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('description', description);
+      Array.from(selectedMembers).forEach(memberId => {
+        formData.append('members[]', memberId);
+      });
+      
+      const response = await fetch('/messages/api/group/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken') || ''
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.id) {
+        alert('Group created successfully!');
+        closeCreateGroupModal();
+        // Refresh the page to show the new group
+        window.location.reload();
+      } else {
+        alert('Error creating group: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('Error creating group. Please try again.');
+    } finally {
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Group';
+    }
+  }
+
+  // Close modal when clicking outside
+  document.getElementById('createGroupModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+      closeCreateGroupModal();
+    }
+  });
+</script>
 {% endblock %}
 
